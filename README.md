@@ -87,6 +87,12 @@ configuration in this order:
 Config files can be read from a number of different file types including
 JSON, TOML, and YAML.
 
+### Environment variables
+
+Vapor will look for any environment variables matching the `env_prefix:` option.
+Vapor downcases and converts "_"s into "."s. So an environment variable
+like `MYAPP_REPO_PORT` can be accessed as `Vapor.get_int(config, "myapp.repo.port")`.
+
 ### Setting config values
 
 Occasionally you'll need to set values programatically. You can do that
