@@ -27,24 +27,16 @@ more `Phoenix.Endpoint`, `Ecto`, `Kafka` connections and less `:kernel`.
 defmodule VaporExample.Config do
   use Vapor.Config
 
-  def start_link(_args \\ []) do
-    opts = [
-      app_name: :vapor_example,
-      env_prefix: "vapor_example",
-      config_name: "config",
-      config_paths: [
-        ".",
-        "$HOME/.vapor_example",
-      ],
-      remote_config: [
-        {:etcd, "http://localhost:40001", "config/vapor_example/config.json"}
-      ],
-      watch_files: false,
-      watch_remote: true,
-      override_application_env: true,
-    ]
+  alias Vapor.Config
 
-    Vapor.start_link(__MODULE__, opts)
+  def start_link(_args \\ []) do
+    config =
+      Config.default()
+      |> Config.merge(Config.File.with_path("$HOME/.vapor/config.json"))
+      |> Config.merge(Config.Env.with_prefix("APP"))
+      |> Config.merge(Config.ETCD.from("http://localhost:40001", "config/vapor/config.json"))
+
+    Vapor.start_link(__MODULE__, config, name: __MODULE__)
   end
 end
 
@@ -52,8 +44,6 @@ defmodule VaporExample.Application do
   use Application
 
   def start(_type, _args) do
-
-    
     children = [
        VaporExample.Config,
        VaporExampleWeb.Endpoint,
@@ -71,27 +61,30 @@ Using the system above the app will not boot until vapor can get
 a configuration. This can be changed using standard OTP supervision
 strategies.
 
+### Startup guarantees
+
+During the init process Vapor will block until the configuration is loaded. If any error is encountered during the initialization step then after a given number of failures Vapor will halt and tell the supervisor to stop. This is important because dependencies will not be able to boot with proper configuration.
+
 ### Precedence
 
-Vapor can read configuration from multiple sources and will apply
-configuration in this order:
+Vapor will apply configuration in the order that it is merged. In the example:
 
- - explicitly setting values
- - environment
- - config file
- - remote configuration system
- - default
+```elixir
+config =
+  Config.default()
+  |> Config.merge(Config.File.with_path("$HOME/.vapor/config.json"))
+  |> Config.merge(Config.Env.with_prefix("APP"))
+  |> Config.merge(Config.ETCD.from("http://localhost:40001", "config/vapor/config.json"))
+```
+
+ETCD will have the highest precedence, followed by Env, and finally File.
+
+Manually setting a configuration value always take precedence over any other configuration source.
 
 ### Reading config files
 
 Config files can be read from a number of different file types including
-JSON, TOML, and YAML.
-
-### Environment variables
-
-Vapor will look for any environment variables matching the `env_prefix:` option.
-Vapor downcases and converts "_"s into "."s. So an environment variable
-like `MYAPP_REPO_PORT` can be accessed as `Vapor.get_int(config, "myapp.repo.port")`.
+JSON, TOML, and YAML. Vapor determines which file format to use based on the file extension.
 
 ### Setting config values
 
@@ -101,6 +94,8 @@ like so:
 ```elixir
 VaporExample.Config.set("key", "value")
 ```
+
+Any manual changes to a configuration value will always take precedence over other configuration changes even if the underlying sources change.
 
 ### Watching config files for changes
 
@@ -123,17 +118,17 @@ end
 There are multiple ways of getting values out of the configuration:
 
 ```elixir
-VaporExample.Config.get_string("config_key")
-VaporExample.Config.get_int("config_key")
-VaporExample.Config.get_float("config_key")
-VaporExample.Config.get_bool("config_key")
+VaporExample.Config.get("config_key", as: :string)
+VaporExample.Config.get("config_key", as: :int)
+VaporExample.Config.get("config_key", as: :float)
+VaporExample.Config.get("config_key", as: :bool)
 ```
 
 If you need to read a nested value you can use a `"."` to separate each
 level:
 
 ```elixir
-VaporExample.Config.get_int("my_app.repo.port")
+VaporExample.Config.get("my_app.repo.port", as: :int)
 ```
 
 ### Overriding application environment
@@ -152,14 +147,14 @@ callback like so:
 defmodule VaporExample.Config do
   def init(config) do
     Application.put_env(:my_app, MyApp.Repo, [
-      database: Vapor.get_string(config, "my_app.repo.database"),
-      username: Vapor.get_string(config, "my_app.repo.username"),
-      password: Vapor.get_string(config, "my_app.repo.password"),
-      hostname: Vapor.get_string(config, "my_app.repo.hostname"),
-      port: Vapor.get_int(config, "my_app.repo.port")
+      database: Vapor.get(config, "my_app.repo.database", as: :string),
+      username: Vapor.get(config, "my_app.repo.username", as: :string),
+      password: Vapor.get(config, "my_app.repo.password", as: :string),
+      hostname: Vapor.get(config, "my_app.repo.hostname", as: :string),
+      port: Vapor.get(config, "my_app.repo.port", as: :int)
     ])
 
-    :ok 
+    :ok
   end
 end
 ```
@@ -173,21 +168,20 @@ systems:
  - JSON
  - YAML
  - TOML
- - etcd 
+ - etcd
  - Consul
  - Vault
 
 If you need to create a new provider you can do so with the included
-`Vapor.Provider` behaviour.
+`Vapor.Provider` protocol.
 
-```elixir 
+```elixir
 defmodule MyApp.DatabaseProvider do
-  @behaviour Vapor.Provider
+  defstruct [id: nil]
 
-  def load() do
-  end
-
-  def watch() do
+  defimpl Vapor.Provider do
+    def load(db_provider) do
+    end
   end
 end
 ```
