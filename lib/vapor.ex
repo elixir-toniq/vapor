@@ -1,18 +1,17 @@
 defmodule Vapor do
   @moduledoc """
-  Documentation for Vapor.
+  Vapor provides mechanisms for handling runtime configuration in your system.
   """
 
   @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Vapor.hello
-      :world
-
+  Starts a configuration store and any watches.
   """
-  def hello do
-    :world
+  def start_link(module, plans, opts) do
+    if opts[:name] do
+      Vapor.Store.Supervisor.start_link(module, plans, opts)
+    else
+      raise Vapor.ConfigurationError, "must supply a `:name` argument"
+    end
   end
 end
+
