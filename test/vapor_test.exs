@@ -22,6 +22,7 @@ defmodule VaporTest do
 
       assert TestConfig.get!("foo", as: :string) == "foo"
       assert TestConfig.get("blank", as: :string) == nil
+
       assert_raise Vapor.NotFoundError, fn ->
         TestConfig.get!("blank", as: :string)
       end

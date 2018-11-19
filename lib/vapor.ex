@@ -14,4 +14,3 @@ defmodule Vapor do
     end
   end
 end
-
