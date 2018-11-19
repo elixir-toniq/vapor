@@ -12,8 +12,9 @@ defmodule Vapor.Config do
 
       def get(key, as: type) when is_binary(key) and is_atom(type) do
         get!(key, as: type)
-      rescue Vapor.NotFoundError ->
-        nil
+      rescue
+        Vapor.NotFoundError ->
+          nil
       end
 
       def get!(key, as: type) when is_binary(key) and is_atom(type) do

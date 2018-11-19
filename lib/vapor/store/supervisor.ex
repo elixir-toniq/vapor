@@ -1,8 +1,8 @@
 defmodule Vapor.Store.Supervisor do
   @moduledoc """
-  This provides the supervisor for the store and any processes used to trigger
-  live updates.
-  """ && false
+             This provides the supervisor for the store and any processes used to trigger
+             live updates.
+             """ && false
 
   use Supervisor
 
@@ -13,7 +13,7 @@ defmodule Vapor.Store.Supervisor do
 
   def init({module, plans}) do
     children = [
-      {Vapor.Store, {module, plans}},
+      {Vapor.Store, {module, plans}}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

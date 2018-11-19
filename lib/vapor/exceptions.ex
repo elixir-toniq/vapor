@@ -3,7 +3,7 @@ defmodule Vapor.NotFoundError do
 
   @impl true
   def exception(key) do
-    msg = "did not find a value for key: #{inspect key}"
+    msg = "did not find a value for key: #{inspect(key)}"
     %__MODULE__{message: msg}
   end
 end

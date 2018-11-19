@@ -1,5 +1,5 @@
 defmodule Vapor.Config.File do
-  defstruct [path: nil, format: nil]
+  defstruct path: nil, format: nil
 
   def with_name(name) do
     %__MODULE__{path: name, format: format(name)}
