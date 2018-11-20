@@ -3,7 +3,7 @@ jobs:
   build:
     docker:
       # specify the version here
-      - image: circleci/elixir:1.4
+      - image: circleci/elixir:1.5
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -15,5 +15,6 @@ jobs:
       - checkout
 
       # specify any bash command here prefixed with `run: `
+      - run: mix local.hex --force
       - run: mix deps.get
       - run: mix test
