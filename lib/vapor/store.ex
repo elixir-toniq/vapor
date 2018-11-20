@@ -8,10 +8,16 @@ defmodule Vapor.Store do
   def init({module, plans}) do
     ^module = :ets.new(module, [:set, :protected, :named_table])
 
-    case load_config(module, plans) do
-      :ok ->
-        {:ok, %{plans: plans, table: module}}
+    case load_config(module, %{}, plans) do
+      {:ok, config} ->
+        case module.init(config) do
+          {:ok, config} ->
+            store_config(module, config)
+            {:ok, %{plans: plans, table: module}}
 
+          result ->
+            result
+        end
       :error ->
         {:stop, :could_not_load_config}
     end
@@ -23,21 +29,25 @@ defmodule Vapor.Store do
     {:reply, {:ok, value}, state}
   end
 
-  defp load_config(table, plans, retry_count \\ 0)
-  defp load_config(_table, [], _), do: :ok
-  defp load_config(_table, _, 10), do: :error
+  defp store_config(table, configs) do
+    Enum.each(configs, fn k_v ->
+      :ets.insert(table, k_v)
+    end)
+  end
 
-  defp load_config(table, [plan | rest], retry_count) do
+  defp load_config(table, configs, plans, retry_count \\ 0)
+
+  defp load_config(_table, configs, [], _), do: {:ok, configs}
+
+  defp load_config(_table, _, _, 10), do: :error
+
+  defp load_config(table, configs, [plan | rest], retry_count) do
     case Vapor.Provider.load(plan) do
-      {:ok, configs} ->
-        Enum.each(configs, fn k_v ->
-          :ets.insert(table, k_v)
-        end)
-
-        load_config(table, rest, 0)
+      {:ok, new_configs} ->
+        load_config(table, Map.merge(configs, new_configs), rest, 0)
 
       {:error, _e} ->
-        load_config(table, [plan | rest], retry_count + 1)
+        load_config(table, configs, [plan | rest], retry_count + 1)
     end
   end
 end

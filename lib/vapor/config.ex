@@ -4,8 +4,14 @@ defmodule Vapor.Config do
   and overlays.
   """
 
+  @type config :: %{optional(String.t) => String.t}
+
+  @callback init(config()) :: {:ok, config()}
+
   defmacro __using__(_opts) do
     quote do
+      @behaviour Vapor.Config
+
       def child_spec(opts) do
         %{
           id: __MODULE__,
@@ -39,6 +45,12 @@ defmodule Vapor.Config do
             raise error, {key, type}
         end
       end
+
+      def init(config) do
+        {:ok, config}
+      end
+
+      defoverridable Vapor.Config
     end
   end
 
