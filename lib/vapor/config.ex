@@ -6,6 +6,16 @@ defmodule Vapor.Config do
 
   defmacro __using__(_opts) do
     quote do
+      def child_spec(opts) do
+        %{
+          id: __MODULE__,
+          start: {__MODULE__, :start_link, [opts]},
+          type: :supervisor,
+          restart: :permanent,
+          shutdown: 500
+        }
+      end
+
       def set(key, value) when is_binary(key) do
         GenServer.call(__MODULE__, {:set, key, value})
       end
