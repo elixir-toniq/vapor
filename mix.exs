@@ -14,7 +14,7 @@ defmodule Vapor.Mixfile do
       source_url: "https://github.com/keathley/vapor",
       dialyzer: [
         ignore_warnings: "dialyzer.ignore-warnings",
-        plt_file: {:no_warn, "priv/plts/vapor.plt"},
+        plt_file: {:no_warn, "priv/plts/vapor.plt"}
       ]
     ]
   end
@@ -31,10 +31,11 @@ defmodule Vapor.Mixfile do
     [
       # normal dependencies
       {:jason, "~> 1.1"},
-
+      {:toml, "~> 0.3"},
+      {:yaml_elixir, "~> 2.1"},
       # dev and test dependencies
-      {:ex_doc, "~> 0.14", only: :dev},
       {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
+      {:ex_doc, "~> 0.14", only: :dev}
     ]
   end
 
