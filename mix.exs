@@ -26,7 +26,9 @@ defmodule Vapor.Mixfile do
   defp deps do
     [
       {:ex_doc, "~> 0.14", only: :dev},
-      {:jason, "~> 1.1"}
+      {:jason, "~> 1.1"},
+      {:toml, "~> 0.3"},
+      {:yaml_elixir, "~> 2.1"}
     ]
   end
 

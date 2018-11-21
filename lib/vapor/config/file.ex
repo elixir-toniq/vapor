@@ -12,6 +12,12 @@ defmodule Vapor.Config.File do
 
       ".json" ->
         :json
+
+      ".toml" ->
+        :toml
+
+      ".yaml" ->
+        :yaml
     end
   end
 
@@ -22,6 +28,12 @@ defmodule Vapor.Config.File do
           case format do
             :json ->
               Jason.decode(str)
+
+            :toml ->
+              Toml.decode(str)
+
+            :yaml ->
+              YamlElixir.read_from_string(str)
           end
 
         {:error, _} ->
