@@ -1,5 +1,5 @@
 defmodule VaporTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
   doctest Vapor
 
   alias Vapor.Config
@@ -21,7 +21,7 @@ defmodule VaporTest do
       TestConfig.set("foo", "foo")
 
       assert TestConfig.get!("foo", as: :string) == "foo"
-      assert TestConfig.get("blank", as: :string) == nil
+      assert TestConfig.get("blank", as: :string) == {:error, Vapor.NotFoundError}
 
       assert_raise Vapor.NotFoundError, fn ->
         TestConfig.get!("blank", as: :string)
@@ -38,8 +38,8 @@ defmodule VaporTest do
 
       TestConfig.start_link(config)
 
-      assert TestConfig.get("foo", as: :string) == "foo"
-      assert TestConfig.get("bar", as: :string) == "bar"
+      assert TestConfig.get!("foo", as: :string) == "foo"
+      assert TestConfig.get!("bar", as: :string) == "bar"
     end
 
     test "can be stacked" do
@@ -53,9 +53,9 @@ defmodule VaporTest do
 
       TestConfig.start_link(config)
 
-      assert TestConfig.get("foo", as: :string) == "file foo"
-      assert TestConfig.get("bar", as: :string) == "env bar"
-      assert TestConfig.get("baz", as: :string) == "file baz"
+      assert TestConfig.get!("foo", as: :string) == "file foo"
+      assert TestConfig.get!("bar", as: :string) == "env bar"
+      assert TestConfig.get!("baz", as: :string) == "file baz"
     end
 
     test "manual config always takes precedence" do
@@ -72,9 +72,9 @@ defmodule VaporTest do
       TestConfig.set("foo", "manual foo")
       TestConfig.set("bar", "manual bar")
 
-      assert TestConfig.get("foo", as: :string) == "manual foo"
-      assert TestConfig.get("bar", as: :string) == "manual bar"
-      assert TestConfig.get("baz", as: :string) == "file baz"
+      assert TestConfig.get!("foo", as: :string) == "manual foo"
+      assert TestConfig.get!("bar", as: :string) == "manual bar"
+      assert TestConfig.get!("baz", as: :string) == "file baz"
     end
 
     test "reads config from toml" do
@@ -84,8 +84,8 @@ defmodule VaporTest do
 
       TestConfig.start_link(config)
 
-      assert(TestConfig.get("foo", as: :string) == %{"foo" => "foo toml"})
-      assert(TestConfig.get("bar", as: :string) == %{"bar" => "bar toml"})
+      assert(TestConfig.get!("foo", as: :string) == %{"foo" => "foo toml"})
+      assert(TestConfig.get!("bar", as: :string) == %{"bar" => "bar toml"})
     end
 
     test "reads config from yaml" do
@@ -95,8 +95,8 @@ defmodule VaporTest do
 
       TestConfig.start_link(config)
 
-      assert(TestConfig.get("foo", as: :string) == "foo yaml")
-      assert(TestConfig.get("bar", as: :string) == "bar yaml")
+      assert(TestConfig.get!("foo", as: :string) == "foo yaml")
+      assert(TestConfig.get!("bar", as: :string) == "bar yaml")
     end
   end
 end
