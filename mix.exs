@@ -11,7 +11,11 @@ defmodule Vapor.Mixfile do
       description: description(),
       package: package(),
       name: "Vapor",
-      source_url: "https://github.com/keathley/vapor"
+      source_url: "https://github.com/keathley/vapor",
+      dialyzer: [
+        ignore_warnings: "dialyzer.ignore-warnings",
+        plt_file: {:no_warn, "priv/plts/vapor.plt"},
+      ]
     ]
   end
 
@@ -25,8 +29,12 @@ defmodule Vapor.Mixfile do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      # normal dependencies
+      {:jason, "~> 1.1"},
+
+      # dev and test dependencies
       {:ex_doc, "~> 0.14", only: :dev},
-      {:jason, "~> 1.1"}
+      {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
     ]
   end
 
@@ -38,7 +46,7 @@ defmodule Vapor.Mixfile do
     [
       name: "vapor",
       files: ["lib", "mix.exs", "README*", "LICENSE"],
-      maintainers: ["Chris Keathley", "Jeff Weiss"],
+      maintainers: ["Chris Keathley", "Jeff Weiss", "Ben Marx"],
       licenses: ["Apache 2.0"],
       links: %{"GitHub" => "https://github.com/keathley/vapor"}
     ]

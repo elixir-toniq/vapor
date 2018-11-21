@@ -3,7 +3,7 @@ jobs:
   build:
     docker:
       # specify the version here
-      - image: circleci/elixir:1.5
+      - image: circleci/elixir:1.6
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -14,7 +14,17 @@ jobs:
     steps:
       - checkout
 
+      - restore_cache:
+          keys:
+            - plt
+
       # specify any bash command here prefixed with `run: `
       - run: mix local.hex --force
       - run: mix deps.get
       - run: mix test
+      - run: mix dialyzer --halt-exit-status
+
+      - save_cache:
+          key: plt
+          paths:
+            - priv/plts
