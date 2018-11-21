@@ -1,6 +1,2 @@
-
-[foo]
 foo = "foo toml"
-
-[bar]
 bar = "bar toml"

@@ -83,9 +83,8 @@ defmodule VaporTest do
         |> Config.merge(Config.File.with_name("test/support/settings.toml"))
 
       TestConfig.start_link(config)
-
-      assert(TestConfig.get!("foo", as: :string) == %{"foo" => "foo toml"})
-      assert(TestConfig.get!("bar", as: :string) == %{"bar" => "bar toml"})
+      assert(TestConfig.get!("foo", as: :string) == "foo toml")
+      assert(TestConfig.get!("bar", as: :string) == "bar toml")
     end
 
     test "reads config from yaml" do
