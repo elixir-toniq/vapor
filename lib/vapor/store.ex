@@ -1,6 +1,11 @@
 defmodule Vapor.Store do
   use GenServer
 
+  @moduledoc """
+    Module that loads config
+    Attempts to load the config 10 times before returning :error
+  """
+
   def start_link({module, plans}) do
     GenServer.start_link(__MODULE__, {module, plans}, name: module)
   end

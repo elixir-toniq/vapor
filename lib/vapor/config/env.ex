@@ -16,14 +16,14 @@ defmodule Vapor.Config.Env do
 
   defstruct prefix: :none, bindings: []
 
-  @type bindings :: Keyword.t(String.t)
+  @type bindings :: Keyword.t(String.t())
 
   @type t :: %__MODULE__{
-    prefix: :none | String.t,
-    bindings: bindings,
-  }
+          prefix: :none | String.t(),
+          bindings: bindings
+        }
 
-  @spec with_prefix(String.t) :: t
+  @spec with_prefix(String.t()) :: t
   def with_prefix(prefix) when is_binary(prefix) do
     %__MODULE__{prefix: build_prefix(prefix)}
   end
@@ -37,7 +37,7 @@ defmodule Vapor.Config.Env do
   def with_bindings(opts) when is_list(opts) do
     %__MODULE__{
       prefix: :none,
-      bindings: opts,
+      bindings: opts
     }
   end
 
@@ -56,12 +56,10 @@ defmodule Vapor.Config.Env do
         bound_envs
         |> Enum.filter(fn {_, v} -> v == :missing end)
 
-      cond do
-        Enum.any?(missing) ->
-          {:error, missing}
-
-        true ->
-          {:ok, bound_envs}
+      if Enum.any?(missing) do
+        {:error, missing}
+      else
+        {:ok, bound_envs}
       end
     end
 
