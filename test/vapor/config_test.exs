@@ -4,7 +4,7 @@ defmodule Vapor.ConfigTest do
   defmodule TestConfig do
     use Vapor.Config
 
-    def start_link() do
+    def start_link do
       Vapor.start_link(__MODULE__, Vapor.Config.default(), name: __MODULE__)
     end
   end

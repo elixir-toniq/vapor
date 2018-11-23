@@ -1,4 +1,9 @@
 defmodule Vapor.Config.File do
+  @moduledoc """
+    Module for loading supported file format configs
+    Supported file formats: .json, .toml, .yaml
+  """
+
   defstruct path: nil, format: nil
 
   def with_name(name) do

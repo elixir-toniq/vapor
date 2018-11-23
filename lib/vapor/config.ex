@@ -1,4 +1,6 @@
 defmodule Vapor.Config do
+  alias Vapor.Config
+
   @moduledoc """
   This module provides conveniences for creating dynamic configuration layouts
   and overlays.
@@ -26,7 +28,7 @@ defmodule Vapor.Config do
             {:error, Vapor.NotFoundError}
 
           [{^key, value}] ->
-            Vapor.Config.Converter.apply(value, type)
+            Config.Converter.apply(value, type)
         end
       end
 
