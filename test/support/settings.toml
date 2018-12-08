@@ -1,2 +1,3 @@
 foo = "foo toml"
 bar = "bar toml"
+biz.boz = "biz boz toml"

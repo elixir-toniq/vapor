@@ -58,6 +58,19 @@ defmodule VaporTest do
       assert TestConfig.get!("baz", as: :string) == "file baz"
     end
 
+    test "path lists can be stacked" do
+      config =
+        Config.default()
+        |> Config.merge(Config.Env.with_prefix("APP"))
+        |> Config.merge(Config.File.with_name("test/support/settings.json"))
+
+      System.put_env("APP_BIZ_BOZ", "env biz boz")
+
+      TestConfig.start_link(config)
+
+      assert TestConfig.get!(["biz", "boz"], as: :string) == "file biz boz"
+    end
+
     test "manual config always takes precedence" do
       config =
         Config.default()
@@ -86,6 +99,7 @@ defmodule VaporTest do
 
       assert(TestConfig.get!("foo", as: :string) == "foo toml")
       assert(TestConfig.get!("bar", as: :string) == "bar toml")
+      assert(TestConfig.get!(["biz", "boz"], as: :string) == "biz boz toml")
     end
 
     test "reads config from yaml" do
@@ -97,6 +111,7 @@ defmodule VaporTest do
 
       assert(TestConfig.get!("foo", as: :string) == "foo yaml")
       assert(TestConfig.get!("bar", as: :string) == "bar yaml")
+      assert(TestConfig.get!(["biz", "boz"], as: :string) == "biz boz yaml")
     end
   end
 end

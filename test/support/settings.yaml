@@ -1,2 +1,4 @@
 foo: "foo yaml"
 bar: "bar yaml"
+biz:
+  boz: "biz boz yaml"

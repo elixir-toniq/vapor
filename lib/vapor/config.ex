@@ -19,10 +19,18 @@ defmodule Vapor.Config do
       end
 
       def set(key, value) when is_binary(key) do
+        set([key], value)
+      end
+
+      def set(key, value) when is_list(key) do
         GenServer.call(__MODULE__, {:set, key, value})
       end
 
       def get(key, as: type) when is_binary(key) do
+        get([key], as: type)
+      end
+
+      def get(key, as: type) when is_list(key) do
         case :ets.lookup(__MODULE__, key) do
           [] ->
             {:error, Vapor.NotFoundError}
@@ -33,6 +41,10 @@ defmodule Vapor.Config do
       end
 
       def get!(key, as: type) when is_binary(key) do
+        get!([key], as: type)
+      end
+
+      def get!(key, as: type) when is_list(key) do
         case get(key, as: type) do
           {:ok, val} ->
             val
