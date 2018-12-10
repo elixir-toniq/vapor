@@ -1,1 +1,1 @@
-{"foo": "file foo", "baz": "file baz"}
+{"foo":"file foo", "baz":"file baz", "biz": {"boz": "file biz boz"}}

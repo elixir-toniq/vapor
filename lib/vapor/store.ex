@@ -28,6 +28,25 @@ defmodule Vapor.Store do
     {:reply, {:ok, value}, state}
   end
 
+  defp pathify_keys(map) when is_map(map) do
+    map
+    |> pathify_keys([], [])
+    |> Enum.into(%{})
+  end
+
+  defp pathify_keys(map, path_so_far, completed_keys) do
+    Enum.reduce(map, completed_keys, fn
+      {k, v}, acc when is_map(v) ->
+        pathify_keys(v, [k | path_so_far], acc)
+
+      {k, v}, acc when is_list(k) ->
+        [{k, v} | acc]
+
+      {k, v}, acc ->
+        [{Enum.reverse([k | path_so_far]), v} | acc]
+    end)
+  end
+
   defp load_config(table, plans, retry_count \\ 0)
   defp load_config(_table, [], _), do: :ok
   defp load_config(_table, _, 10), do: :error
@@ -35,7 +54,9 @@ defmodule Vapor.Store do
   defp load_config(table, [plan | rest], retry_count) do
     case Vapor.Provider.load(plan) do
       {:ok, configs} ->
-        Enum.each(configs, fn k_v ->
+        configs
+        |> pathify_keys
+        |> Enum.each(fn k_v ->
           :ets.insert(table, k_v)
         end)
 

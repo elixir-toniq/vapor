@@ -17,8 +17,15 @@ defmodule Vapor.Config.EnvTest do
 
     plan = Env.with_prefix("APP")
     {:ok, envs} = Vapor.Provider.load(plan)
-    assert envs["foo"] == "env foo"
-    assert envs["bar"] == "env bar"
+    assert envs[["foo"]] == "env foo"
+    assert envs[["bar"]] == "env bar"
+  end
+
+  test "with_prefix/1 splits on _ into list" do
+    System.put_env("APP_FOO_BAR", "env foo bar")
+    plan = Env.with_prefix("APP")
+    {:ok, envs} = Vapor.Provider.load(plan)
+    assert envs[["foo", "bar"]] == "env foo bar"
   end
 
   describe "with_bindings/1" do
@@ -26,11 +33,13 @@ defmodule Vapor.Config.EnvTest do
       System.put_env("FOO", "env foo")
       System.put_env("BAR", "env bar")
 
-      plan = Env.with_bindings([
-        foo: "FOO",
-        bar: "BAR",
-        baz: "BAZ"
-      ])
+      plan =
+        Env.with_bindings(
+          foo: "FOO",
+          bar: "BAR",
+          baz: "BAZ"
+        )
+
       assert {:error, _} = Vapor.Provider.load(plan)
 
       System.put_env("BAZ", "env baz")

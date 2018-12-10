@@ -79,6 +79,7 @@ defmodule Vapor.Config.Env do
       str
       |> String.replace_leading(prefix, "")
       |> String.downcase()
+      |> String.split("_")
     end
 
     defp matches_prefix?({k, _v}, prefix) do

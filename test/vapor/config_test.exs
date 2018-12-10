@@ -55,7 +55,8 @@ defmodule Vapor.ConfigTest do
 
       assert TestConfig.get!("string", as: fn "string" -> {:ok, "bar"} end) == "bar"
 
-      assert TestConfig.get("string",
+      assert TestConfig.get(
+               "string",
                as: fn "string" ->
                  {:error, nil}
                end
