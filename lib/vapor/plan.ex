@@ -5,10 +5,10 @@ defmodule Vapor.Plan do
 
   def merge(plan, provider) do
     plan
-    |> Map.put(next_key(plan), provider)
+    |> Map.put(next_layer(plan), provider)
   end
 
-  defp next_key(plan) do
+  defp next_layer(plan) do
     if Enum.empty?(Map.keys(plan)) do
       0
     else
