@@ -13,4 +13,8 @@ defmodule Vapor do
       raise Vapor.ConfigurationError, "must supply a `:name` argument"
     end
   end
+
+  def stop(name) do
+    Vapor.Store.Supervisor.stop(name)
+  end
 end

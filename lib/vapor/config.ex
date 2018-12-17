@@ -130,4 +130,8 @@ defmodule Vapor.Config do
   def merge(existing_plan, provider) do
     Plan.merge(existing_plan, provider)
   end
+
+  def watch(plan, provider, opts \\ []) do
+    Plan.watch(plan, provider, opts)
+  end
 end

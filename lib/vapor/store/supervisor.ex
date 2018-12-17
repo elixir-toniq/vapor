@@ -6,14 +6,24 @@ defmodule Vapor.Store.Supervisor do
 
   use Supervisor
 
+  alias Vapor.{
+    Store,
+    Watch
+  }
+
   def start_link(module, plans, opts) do
     name = Keyword.fetch!(opts, :name)
     Supervisor.start_link(__MODULE__, {module, plans}, name: :"#{name}_sup")
   end
 
+  def stop(name) do
+    Supervisor.stop(:"#{name}_sup")
+  end
+
   def init({module, plans}) do
     children = [
-      {Vapor.Store, {module, plans}}
+      {Vapor.Watch.Supervisor, [name: Watch.Supervisor.sup_name(module)]},
+      {Vapor.Store, {module, plans}},
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
