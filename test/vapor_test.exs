@@ -175,7 +175,7 @@ defmodule VaporTest do
       if count > 5 do
         raise e
       else
-        :timer.sleep(50)
+        :timer.sleep(100)
         eventually(f, count + 1)
       end
   end

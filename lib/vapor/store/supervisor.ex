@@ -22,8 +22,8 @@ defmodule Vapor.Store.Supervisor do
 
   def init({module, plans}) do
     children = [
-      {Vapor.Watch.Supervisor, [name: Watch.Supervisor.sup_name(module)]},
-      {Vapor.Store, {module, plans}},
+      {Watch.Supervisor, [name: Watch.Supervisor.sup_name(module)]},
+      {Store, {module, plans}},
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

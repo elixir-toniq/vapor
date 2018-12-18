@@ -27,7 +27,7 @@ defmodule Vapor.Watch do
     end
   end
 
-  defp schedule_refresh(%{opts: [refresh_interval: interval]}) do
-    Process.send_after(self(), :refresh, interval)
+  defp schedule_refresh(%{opts: opts}) do
+    Process.send_after(self(), :refresh, opts[:refresh_interval])
   end
 end

@@ -1,7 +1,7 @@
 defmodule Vapor.Plan do
 
   @default_watch_opts [
-    refresh_interval: 30_000
+    refresh_interval: 30_000,
   ]
 
   def new do
