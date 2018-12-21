@@ -7,6 +7,10 @@ defmodule Vapor.ConfigTest do
     def start_link do
       Vapor.start_link(__MODULE__, Vapor.Config.default(), name: __MODULE__)
     end
+
+    def stop do
+      Vapor.stop(__MODULE__)
+    end
   end
 
   describe "get/2" do
@@ -24,6 +28,8 @@ defmodule Vapor.ConfigTest do
       assert TestConfig.get("float", as: :float) == {:ok, 3.2}
       assert TestConfig.get("true", as: :bool) == {:ok, true}
       assert TestConfig.get("false", as: :bool) == {:ok, false}
+
+      TestConfig.stop()
     end
 
     test "returns errors if conversions fail" do
@@ -46,6 +52,8 @@ defmodule Vapor.ConfigTest do
       assert_raise Vapor.ConversionError, fn ->
         TestConfig.get!("string", as: :bool)
       end
+
+      TestConfig.stop()
     end
 
     test "allows custom conversions" do
@@ -65,6 +73,8 @@ defmodule Vapor.ConfigTest do
       assert_raise Vapor.ConversionError, fn ->
         TestConfig.get!("string", as: fn "string" -> {:error, nil} end)
       end
+
+      TestConfig.stop()
     end
   end
 end

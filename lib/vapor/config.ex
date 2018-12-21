@@ -1,10 +1,13 @@
 defmodule Vapor.Config do
-  alias Vapor.Config
-
   @moduledoc """
   This module provides conveniences for creating dynamic configuration layouts
   and overlays.
   """
+
+  alias Vapor.{
+    Config,
+    Plan,
+  }
 
   defmacro __using__(_opts) do
     quote do
@@ -117,14 +120,18 @@ defmodule Vapor.Config do
   Creates an initial configuration.
   """
   def default do
-    []
+    Plan.new()
   end
 
   @doc """
   Merges an existing configuration plan with a new configuration plan.
   Plans are stacked and applied in the order that they are merged.
   """
-  def merge(existing_plan, plan) do
-    existing_plan ++ [plan]
+  def merge(existing_plan, provider) do
+    Plan.merge(existing_plan, provider)
+  end
+
+  def watch(plan, provider, opts \\ []) do
+    Plan.watch(plan, provider, opts)
   end
 end
