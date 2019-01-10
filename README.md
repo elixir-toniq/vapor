@@ -18,7 +18,7 @@ providing a complete alternative to mix config. Specifically Vapor can:
 ## How it works
 
 Vapor is an alternative to mix configs. It runs after your application
-boots and should therefor be used for "higher level" configuration. Think
+boots and should therefore be used for "higher level" configuration. Think
 more `Phoenix.Endpoint`, `Ecto`, `Kafka` connections and less `:kernel`.
 
 ## Example
