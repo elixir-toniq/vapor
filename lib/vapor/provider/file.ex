@@ -1,7 +1,7 @@
-defmodule Vapor.Config.File do
+defmodule Vapor.Provider.File do
   @moduledoc """
-    Module for loading supported file format configs
-    Supported file formats: .json, .toml, .yaml
+  Module for loading supported file format configs
+  Supported file formats: .json, .toml, .yaml
   """
 
   defstruct path: nil, format: nil

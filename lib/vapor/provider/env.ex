@@ -1,4 +1,4 @@
-defmodule Vapor.Config.Env do
+defmodule Vapor.Provider.Env do
   @moduledoc """
   The Env config module provides support for pulling configuration values
   from the environment. It can do this by either specifying a prefix or by
@@ -49,8 +49,7 @@ defmodule Vapor.Config.Env do
 
       bound_envs =
         bindings
-        |> Enum.map(fn {key, env} -> {Atom.to_string(key), Map.get(envs, env, :missing)} end)
-        |> Enum.into(%{})
+        |> Enum.into(%{}, fn {key, env} -> {Atom.to_string(key), Map.get(envs, env, :missing)} end)
 
       missing =
         bound_envs
@@ -69,8 +68,7 @@ defmodule Vapor.Config.Env do
       prefixed_envs =
         env
         |> Enum.filter(&matches_prefix?(&1, prefix))
-        |> Enum.map(fn {k, v} -> {normalize(k, prefix), v} end)
-        |> Enum.into(%{})
+        |> Enum.into(%{}, fn {k, v} -> {normalize(k, prefix), v} end)
 
       {:ok, prefixed_envs}
     end

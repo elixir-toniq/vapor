@@ -1,4 +1,6 @@
 defmodule Vapor.Watch do
+  @moduledoc false
+
   use GenServer
 
   alias Vapor.{
@@ -31,3 +33,4 @@ defmodule Vapor.Watch do
     Process.send_after(self(), :refresh, opts[:refresh_interval])
   end
 end
+
