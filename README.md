@@ -8,33 +8,35 @@ applications.
 Dynamically configuring elixir apps can be hard. There are major
 differences between configuring applications with mix and configuring
 applications in a release. Vapor wants to make all of that easy by
-providing a complete alternative to mix config. Specifically Vapor can:
+providing an alternative to mix config for runtime configs. Specifically Vapor can:
 
-  * Find and load configuration from files (JSON, YAML, TOML)
-  * Read configuration from environment variables
-  * Allow developers to programmatically set config values
+  * Find and load configuration from files (JSON, YAML, TOML).
+  * Read configuration from environment variables.
+  * `.env` file support for easy local development.
+  * Allow developers to programmatically set config values.
   * Watch configuration sources for changes.
+  * Lookup speed is comparable to `Application.get_env/2`.
 
-## How it works
-
-Vapor is an alternative to mix configs. It runs after your application
-boots and should therefore be used for "higher level" configuration. Think
-more `Phoenix.Endpoint`, `Ecto`, `Kafka` connections and less `:kernel`.
+Vapor provides its own supervision tree that you can add to your
+application's supervision tree similar to `Phoenix.Endpoint` or
+`Ecto.Repo`. This means that you can start Vapor at any point in your application
+lifecycle. But because of this tradeoff Vapor will always be started after the
+release and any kernel modules have started.
 
 ## Example
 
 ```elixir
 defmodule VaporExample.Config do
-  use Vapor.Config
+  use Vapor
 
   alias Vapor.Config
+  alias Vapor.Provider.{File, Env}
 
   def start_link(_args \\ []) do
     config =
       Config.default()
-      |> Config.merge(Config.File.with_path("$HOME/.vapor/config.json"))
-      |> Config.merge(Config.Env.with_prefix("APP"))
-      |> Config.merge(Config.ETCD.from("http://localhost:40001", "config/vapor/config.json"))
+      |> Config.merge(File.with_path("$HOME/.vapor/config.json"))
+      |> Config.merge(Env.with_prefix("APP"))
 
     Vapor.start_link(__MODULE__, config, name: __MODULE__)
   end
@@ -72,12 +74,12 @@ Vapor will apply configuration in the order that it is merged. In the example:
 ```elixir
 config =
   Config.default()
-  |> Config.merge(Config.File.with_path("$HOME/.vapor/config.json"))
-  |> Config.merge(Config.Env.with_prefix("APP"))
-  |> Config.merge(Config.ETCD.from("http://localhost:40001", "config/vapor/config.json"))
+  |> Config.merge(Dotenv.default())
+  |> Config.merge(File.with_path("$HOME/.vapor/config.json"))
+  |> Config.merge(Env.with_prefix("APP"))
 ```
 
-ETCD will have the highest precedence, followed by Env, and finally File.
+Env will have the highest precedence, followed by File, and finally Dotenv.
 
 Manually setting a configuration value always take precedence over any other configuration source.
 
@@ -95,7 +97,8 @@ like so:
 VaporExample.Config.set("key", "value")
 ```
 
-Any manual changes to a configuration value will always take precedence over other configuration changes even if the underlying sources change.
+Any manual changes to a configuration value will always take precedence over
+other configuration changes even if the underlying sources change.
 
 ### Watching config files for changes
 
@@ -124,11 +127,11 @@ VaporExample.Config.get("config_key", as: :float)
 VaporExample.Config.get("config_key", as: :bool)
 ```
 
-If you need to read a nested value you can use a `"."` to separate each
-level:
+If you need to read a nested value you can use provide a path to the value
+needed like so:
 
 ```elixir
-VaporExample.Config.get("my_app.repo.port", as: :int)
+VaporExample.Config.get(["my_app", "repo", "port"], as: :int)
 ```
 
 ### Overriding application environment
@@ -147,11 +150,11 @@ callback like so:
 defmodule VaporExample.Config do
   def init(config) do
     Application.put_env(:my_app, MyApp.Repo, [
-      database: Vapor.get(config, "my_app.repo.database", as: :string),
-      username: Vapor.get(config, "my_app.repo.username", as: :string),
-      password: Vapor.get(config, "my_app.repo.password", as: :string),
-      hostname: Vapor.get(config, "my_app.repo.hostname", as: :string),
-      port: Vapor.get(config, "my_app.repo.port", as: :int)
+      database: Vapor.get(config, ["my_app", "repo", "database"], as: :string),
+      username: Vapor.get(config, ["my_app", "repo", "username"], as: :string),
+      password: Vapor.get(config, ["my_app", "repo", "password"], as: :string),
+      hostname: Vapor.get(config, ["my_app", "repo", "hostname"], as: :string),
+      port: Vapor.get(config, ["my_app", "repo", "port"], as: :int)
     ])
 
     :ok
@@ -161,16 +164,13 @@ end
 
 ## Providers
 
-There are providers for a number of different file types and remote
-systems:
+There are several built in providers
 
  - Environment
+ - .env files
  - JSON
  - YAML
  - TOML
- - etcd
- - Consul
- - Vault
 
 If you need to create a new provider you can do so with the included
 `Vapor.Provider` protocol.
@@ -185,3 +185,27 @@ defmodule MyApp.DatabaseProvider do
   end
 end
 ```
+
+## Why does this exist?
+
+Vapor is intended to be used for the configuration of other runtime dependencies
+such as setting the port for `Phoenix.Endpoint` or setting the database url for `Ecto.Repo`.
+Vapor is *not* intended for configuration of kernel modules such as `:ssh`.
+
+If you need to configure lower level modules then you should use Distillery's Provider
+system. But in my experience most people can get away with configuring most of
+their dependencies at runtime.
+
+## Why not just use distillery's providers for everything?
+
+Distillery provides a set of providers for loading runtime configuration *before*
+a release is booted. That means its suitable for configuring modules like `:ssh`.
+Those providers are very useful however there are still a few limitations that I
+need to be able to solve in my daily work:
+
+* If configuration ends up in Mix config then its still functioning as a global and is shared across all of your running applications.
+* Providers are only run on boot.
+* Limited ability to recover from failures while fetching config from external providers.
+
+Vapor is specifically designed to target all of these use cases.
+

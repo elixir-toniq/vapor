@@ -1,14 +1,9 @@
 defmodule Vapor.Configuration do
-  @moduledoc """
-  Manages a layered set of configuration values.
-  """
+  @moduledoc false
+  # Manages a layered set of configuration values.
+  # Not meant to be consumed by the end user
 
   defstruct layers: %{overrides: %{}}, versions: []
-
-  @type t :: %__MODULE__{
-    layers: %{required(layer) => map()},
-    versions: [],
-  }
 
   @typedoc """
   The path to store the value at. Serves as a key.
@@ -18,11 +13,20 @@ defmodule Vapor.Configuration do
   @typedoc """
   The action needed to achieve consistency with the desired configuration.
   """
-  @type action :: {:upsert, path, term()}
+  @opaque action :: {:upsert, path, term()}
                 | {:delete, path}
 
-  @type layer :: integer()
+  @typedoc """
+  The "layer" for the configuration. Its either an integer or overrides.
+  Higher integers overwrite lower integers
+  """
+  @opaque layer :: integer()
                | :overrides
+
+  @opaque t :: %__MODULE__{
+    layers: %{required(layer) => map()},
+    versions: [],
+  }
 
   @doc """
   Returns a new configuration with an initial set of layers and a list of

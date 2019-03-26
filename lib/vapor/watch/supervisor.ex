@@ -1,4 +1,6 @@
 defmodule Vapor.Watch.Supervisor do
+  @moduledoc false
+
   use DynamicSupervisor
 
   def start_link(name: name) do

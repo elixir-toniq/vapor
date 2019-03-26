@@ -1,15 +1,18 @@
 defmodule Vapor.Store do
-  @moduledoc """
-  Module that loads config
-  Attempts to load the config 10 times before returning :error
-  """
+  @moduledoc false
+  # This module maintains the storage for configuration values.
+  # When the store process is initialized it will block and
+  # attempt to load the config 10 times before returning :error which will
+  # cause the boot process to halt. Once the boot process has completed any
+  # updates will be handled gracefully but cause alarms to be triggered.
 
   use GenServer
 
   alias Vapor.{
+    Config,
     Configuration,
-    Plan,
-    Watch
+    Provider,
+    Watch,
   }
 
   def start_link({module, plans}) do
@@ -30,13 +33,13 @@ defmodule Vapor.Store do
 
     ^module = :ets.new(module, table_opts)
 
-    case Plan.load(plans) do
+    case load(plans) do
       {:ok, layers} ->
         {config, actions} = Configuration.new(layers)
         process_actions(actions, module)
 
         plans
-        |> Plan.watches
+        |> Config.watches
         |> Enum.each(fn {layer, plan} -> start_watch(layer, plan, module) end)
 
         {:ok, %{config: config, table: module}}
@@ -61,17 +64,34 @@ defmodule Vapor.Store do
   end
 
   defp process_actions(actions, table) do
-    actions
-    |> Enum.each(fn action -> process_action(action, table) end)
+    Enum.each(actions, fn action ->
+      case action do
+        {:upsert, key, value} ->
+          :ets.insert(table, {key, value})
+
+        {:delete, key} ->
+          :ets.delete(table, key)
+      end
+    end)
   end
 
-  defp process_action(action, table) do
-    case action do
-      {:upsert, key, value} ->
-        :ets.insert(table, {key, value})
+  defp load(plans) when is_map(plans) do
+    results =
+      plans
+      |> Enum.map(fn {key, plan} -> {key, Provider.load(plan.provider)} end)
 
-      {:delete, key} ->
-        :ets.delete(table, key)
+    errors =
+      results
+      |> Enum.filter(fn {_, {result, _}} -> result == :error end)
+
+    if Enum.any?(errors) do
+      {:error, errors}
+    else
+      layers =
+        results
+        |> Enum.into(%{}, fn {key, {:ok, v}} -> {key, v} end)
+
+      {:ok, layers}
     end
   end
 

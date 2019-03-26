@@ -17,7 +17,8 @@ defmodule Vapor.Mixfile do
         ignore_warnings: "dialyzer.ignore-warnings",
         plt_file: {:no_warn, "priv/plts/vapor.plt"}
       ],
-      test_coverage: [tool: ExCoveralls]
+      test_coverage: [tool: ExCoveralls],
+      docs: docs(),
     ]
   end
 
@@ -39,7 +40,7 @@ defmodule Vapor.Mixfile do
       {:credo, "~> 1.0"},
       {:excoveralls, "~> 0.10.3"},
       {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
-      {:ex_doc, "~> 0.14", only: :dev}
+      {:ex_doc, "~> 0.19", only: :dev}
     ]
   end
 
@@ -54,6 +55,12 @@ defmodule Vapor.Mixfile do
       maintainers: ["Chris Keathley", "Jeff Weiss", "Ben Marx"],
       licenses: ["Apache 2.0"],
       links: %{"GitHub" => "https://github.com/keathley/vapor"}
+    ]
+  end
+
+  def docs do
+    [
+      main: "Vapor",
     ]
   end
 end

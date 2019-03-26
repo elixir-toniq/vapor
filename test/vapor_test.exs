@@ -2,12 +2,15 @@ defmodule VaporTest do
   use ExUnit.Case, async: false
   doctest Vapor
 
-  alias Vapor.Config
+  alias Vapor.{
+    Config,
+    Provider,
+  }
 
   defmodule TestConfig do
-    use Vapor.Config
+    use Vapor
 
-    def start_link(config) do
+    def start_link(config \\ Config.default()) do
       Vapor.start_link(__MODULE__, config, name: __MODULE__)
     end
 
@@ -37,7 +40,7 @@ defmodule VaporTest do
     test "can pull in the environment" do
       config =
         Config.default()
-        |> Config.merge(Config.Env.with_prefix("APP"))
+        |> Config.merge(Provider.Env.with_prefix("APP"))
 
       System.put_env("APP_FOO", "foo")
       System.put_env("APP_BAR", "bar")
@@ -53,8 +56,8 @@ defmodule VaporTest do
     test "can be stacked" do
       config =
         Config.default()
-        |> Config.merge(Config.Env.with_prefix("APP"))
-        |> Config.merge(Config.File.with_name("test/support/settings.json"))
+        |> Config.merge(Provider.Env.with_prefix("APP"))
+        |> Config.merge(Provider.File.with_name("test/support/settings.json"))
 
       System.put_env("APP_FOO", "env foo")
       System.put_env("APP_BAR", "env bar")
@@ -71,8 +74,8 @@ defmodule VaporTest do
     test "path lists can be stacked" do
       config =
         Config.default()
-        |> Config.merge(Config.Env.with_prefix("APP"))
-        |> Config.merge(Config.File.with_name("test/support/settings.json"))
+        |> Config.merge(Provider.Env.with_prefix("APP"))
+        |> Config.merge(Provider.File.with_name("test/support/settings.json"))
 
       System.put_env("APP_BIZ_BOZ", "env biz boz")
 
@@ -86,8 +89,8 @@ defmodule VaporTest do
     test "manual config always takes precedence" do
       config =
         Config.default()
-        |> Config.watch(Config.Env.with_prefix("APP"), refresh_interval: 100)
-        |> Config.merge(Config.File.with_name("test/support/settings.json"))
+        |> Config.watch(Provider.Env.with_prefix("APP"), refresh_interval: 100)
+        |> Config.merge(Provider.File.with_name("test/support/settings.json"))
 
       System.put_env("APP_FOO", "env foo")
       System.put_env("APP_BAR", "env bar")
@@ -116,8 +119,8 @@ defmodule VaporTest do
     test "sources can be watched for updates but still stack" do
       config =
         Config.default()
-        |> Config.watch(Config.Env.with_prefix("APP"), refresh_interval: 100)
-        |> Config.merge(Config.File.with_name("test/support/settings.json"))
+        |> Config.watch(Provider.Env.with_prefix("APP"), refresh_interval: 100)
+        |> Config.merge(Provider.File.with_name("test/support/settings.json"))
 
       System.put_env("APP_FOO", "env foo")
       System.put_env("APP_BAR", "env bar")
@@ -142,7 +145,7 @@ defmodule VaporTest do
     test "reads config from toml" do
       config =
         Config.default()
-        |> Config.merge(Config.File.with_name("test/support/settings.toml"))
+        |> Config.merge(Provider.File.with_name("test/support/settings.toml"))
 
       {:ok, _} = TestConfig.start_link(config)
 
@@ -156,7 +159,7 @@ defmodule VaporTest do
     test "reads config from yaml" do
       config =
         Config.default()
-        |> Config.merge(Config.File.with_name("test/support/settings.yaml"))
+        |> Config.merge(Provider.File.with_name("test/support/settings.yaml"))
 
       {:ok, _} = TestConfig.start_link(config)
 
@@ -168,12 +171,77 @@ defmodule VaporTest do
     end
   end
 
+  describe "get/2" do
+    test "supports common transforms" do
+      TestConfig.start_link()
+
+      TestConfig.set("string", "string")
+      TestConfig.set("int", "42")
+      TestConfig.set("float", "3.2")
+      TestConfig.set("true", "true")
+      TestConfig.set("false", "false")
+
+      assert TestConfig.get("string", as: :string) == {:ok, "string"}
+      assert TestConfig.get("int", as: :int) == {:ok, 42}
+      assert TestConfig.get("float", as: :float) == {:ok, 3.2}
+      assert TestConfig.get("true", as: :bool) == {:ok, true}
+      assert TestConfig.get("false", as: :bool) == {:ok, false}
+
+      TestConfig.stop()
+    end
+
+    test "returns errors if conversions fail" do
+      TestConfig.start_link()
+
+      TestConfig.set("string", "string")
+
+      assert TestConfig.get("string", as: :int) == {:error, Vapor.ConversionError}
+      assert TestConfig.get("string", as: :float) == {:error, Vapor.ConversionError}
+      assert TestConfig.get("string", as: :bool) == {:error, Vapor.ConversionError}
+
+      assert_raise Vapor.ConversionError, fn ->
+        TestConfig.get!("string", as: :int)
+      end
+
+      assert_raise Vapor.ConversionError, fn ->
+        TestConfig.get!("string", as: :float)
+      end
+
+      assert_raise Vapor.ConversionError, fn ->
+        TestConfig.get!("string", as: :bool)
+      end
+
+      TestConfig.stop()
+    end
+
+    test "allows custom conversions" do
+      TestConfig.start_link()
+
+      TestConfig.set("string", "string")
+
+      assert TestConfig.get!("string", as: fn "string" -> {:ok, "bar"} end) == "bar"
+
+      assert TestConfig.get(
+               "string",
+               as: fn "string" ->
+                 {:error, nil}
+               end
+             ) == {:error, Vapor.ConversionError}
+
+      assert_raise Vapor.ConversionError, fn ->
+        TestConfig.get!("string", as: fn "string" -> {:error, nil} end)
+      end
+
+      TestConfig.stop()
+    end
+  end
+
   defp eventually(f, count \\ 0) do
     f.()
   rescue
     e ->
       if count > 5 do
-        raise e
+        reraise e, __STACKTRACE__
       else
         :timer.sleep(100)
         eventually(f, count + 1)

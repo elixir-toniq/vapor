@@ -3,7 +3,7 @@ jobs:
   build:
     docker:
       # specify the version here
-      - image: circleci/elixir:1.6
+      - image: circleci/elixir:1.7
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
