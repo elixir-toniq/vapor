@@ -23,6 +23,18 @@ application's supervision tree similar to `Phoenix.Endpoint` or
 lifecycle. But because of this tradeoff Vapor will always be started after the
 release and any kernel modules have started.
 
+## Installing
+
+Add vapor to your mix dependencies:
+
+```
+def deps do
+  [
+    {:vapor, "~> 0.2"},
+  ]
+end
+```
+
 ## Example
 
 ```elixir
