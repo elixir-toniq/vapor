@@ -53,6 +53,7 @@ defmodule Vapor.Provider.DotenvTest do
       # This is a comment
       FOO=foo
       # BAR=bar
+        # BAZ=comment with indentation
       """
       File.write(".env", contents)
 
