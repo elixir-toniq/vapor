@@ -39,11 +39,16 @@ defmodule Vapor.Provider.Dotenv do
     defp parse(contents) do
       contents
       |> String.split(~r/\n/, trim: true)
+      |> Enum.reject(&comment?/1)
       |> Enum.map(fn pair -> String.split(pair, "=") end)
       |> Enum.filter(&good_pair/1)
       |> Enum.map(fn [key, value] -> {String.trim(key), String.trim(value)} end)
       |> Enum.map(fn {key, value} -> {normalize(key), value} end)
       |> Enum.into(Map.new())
+    end
+
+    defp comment?(line) do
+      Regex.match?(~R/\A\s*#/, line)
     end
 
     defp good_pair(pair) do

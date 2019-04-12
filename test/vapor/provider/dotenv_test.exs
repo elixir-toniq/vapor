@@ -47,6 +47,20 @@ defmodule Vapor.Provider.DotenvTest do
       {:ok, envs} = Vapor.Provider.load(plan)
       assert envs == %{["foo"] => "foo"}
     end
+
+    test "ignores comment lines" do
+      contents = """
+      # This is a comment
+      FOO=foo
+      # BAR=bar
+        # BAZ=comment with indentation
+      """
+      File.write(".env", contents)
+
+      plan = Dotenv.default()
+      {:ok, envs} = Vapor.Provider.load(plan)
+      assert envs == %{["foo"] => "foo"}
+    end
   end
 
   describe "with_file/1" do
