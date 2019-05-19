@@ -5,11 +5,53 @@ defmodule Vapor do
 
   alias Vapor.{
     Store,
-    Watch,
+    Watch
   }
+
+  @type key :: String.t() | list()
+  @type type :: :string | :int | :float | :bool
+  @type value :: String.t() | integer | float | boolean
+
+  @doc """
+  Fetches a value from the config under the key provided. Accept a list forming a path of keys.
+  You need to specify a type to convert the value into through the `as:` element.
+  The accepted types are `:string`, `:int`, `:float` and `:bool`
+
+  ## Example
+    VaporExample.Config.get("config_key", as: :string)
+
+    VaporExample.Config.get(["nested", "config_key"], as: :string)
+
+  """
+  @callback get(key :: key, type :: [as: type]) ::
+              {:ok, value} | {:error, Vapor.ConversionError} | {:error, Vapor.NotFoundError}
+
+  @doc """
+  Similar to `c:get/2` but raise if an error happens
+
+  ## Example
+
+    VaporExample.Config.get!("config_key", as: :string)
+
+    VaporExample.Config.get!(["nested", "config_key"], as: :string)
+  """
+  @callback get!(key :: key, type :: [as: type]) :: value | none
+
+  @doc """
+  Set the value under the key in the store.
+
+  ## Example
+
+    VaporExample.Config.set("key", "value")
+
+    VaporExample.Config.set(["nested", "key"], "value")
+  """
+  @callback set(key :: key, value :: value) :: {:ok, value}
 
   defmacro __using__(_opts) do
     quote do
+      @behaviour Vapor
+
       def child_spec(opts) do
         %{
           id: __MODULE__,
@@ -80,10 +122,9 @@ defmodule Vapor do
   def init({module, plans}) do
     children = [
       {Watch.Supervisor, [name: Watch.Supervisor.sup_name(module)]},
-      {Store, {module, plans}},
+      {Store, {module, plans}}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
   end
 end
-
