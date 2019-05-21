@@ -77,7 +77,7 @@ strategies.
 
 ### Startup guarantees
 
-During the init process Vapor will block until the configuration is loaded. If any error is encountered during the initialization step then after a given number of failures Vapor will halt and tell the supervisor to stop. This is important because dependencies will not be able to boot with proper configuration.
+During the init process Vapor will block until the configuration is loaded. If any error is encountered during the initialization step then after a given number of failures Vapor will halt and tell the supervisor to stop. This is important because dependencies will not be able to boot without proper configuration.
 
 ### Precedence
 
@@ -139,7 +139,7 @@ VaporExample.Config.get("config_key", as: :float)
 VaporExample.Config.get("config_key", as: :bool)
 ```
 
-If you need to read a nested value you can use provide a path to the value
+If you need to read a nested value you can provide a path to the value
 needed like so:
 
 ```elixir
