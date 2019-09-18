@@ -21,6 +21,8 @@ defmodule Vapor.Store do
 
   def update(store, layer, new_config) do
     GenServer.call(store, {:update, layer, new_config})
+    store.handle_change
+
   end
 
   def init({module, plans}) do
@@ -52,7 +54,6 @@ defmodule Vapor.Store do
   def handle_call({:update, layer, new_values}, _, %{config: config}=state) do
     {new_config, actions} = Configuration.update(config, layer, new_values)
     process_actions(actions, state.table)
-
     {:reply, :ok, %{state | config: new_config}}
   end
 
@@ -64,6 +65,7 @@ defmodule Vapor.Store do
   end
 
   defp process_actions(actions, table) do
+    # IO.inspect(table, label: "Table: ")
     Enum.each(actions, fn action ->
       case action do
         {:upsert, key, value} ->

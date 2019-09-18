@@ -48,6 +48,8 @@ defmodule Vapor do
   """
   @callback set(key :: key, value :: value) :: {:ok, value}
 
+  @callback handle_change :: (:ok)
+
   defmacro __using__(_opts) do
     quote do
       @behaviour Vapor
@@ -68,6 +70,7 @@ defmodule Vapor do
 
       def set(key, value) when is_list(key) do
         GenServer.call(__MODULE__, {:set, key, value})
+        handle_change()
       end
 
       def get(key, as: type) when is_binary(key) do
