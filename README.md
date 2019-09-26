@@ -47,7 +47,7 @@ defmodule VaporExample.Config do
   def start_link(_args \\ []) do
     config =
       Config.default()
-      |> Config.merge(File.with_path("$HOME/.vapor/config.json"))
+      |> Config.merge(File.with_name("$HOME/.vapor/config.json"))
       |> Config.merge(Env.with_prefix("APP"))
 
     Vapor.start_link(__MODULE__, config, name: __MODULE__)
@@ -87,7 +87,7 @@ Vapor will apply configuration in the order that it is merged. In the example:
 config =
   Config.default()
   |> Config.merge(Dotenv.default())
-  |> Config.merge(File.with_path("$HOME/.vapor/config.json"))
+  |> Config.merge(File.with_name("$HOME/.vapor/config.json"))
   |> Config.merge(Env.with_prefix("APP"))
 ```
 
