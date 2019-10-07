@@ -29,6 +29,8 @@ defmodule Vapor.Converter do
     end
   end
 
+  defp to_int(value) when is_integer(value), do: {:ok, value}
+
   defp to_int(value) do
     case Integer.parse(value) do
       :error ->
@@ -38,6 +40,8 @@ defmodule Vapor.Converter do
         {:ok, int}
     end
   end
+
+  defp to_float(value) when is_float(value), do: {:ok, value}
 
   defp to_float(value) do
     case Float.parse(value) do
