@@ -9,8 +9,8 @@ defmodule Vapor.Store do
   use GenServer
 
   alias Vapor.{
-    Config,
     Configuration,
+    Plan,
     Provider,
     Watch,
   }
@@ -39,7 +39,7 @@ defmodule Vapor.Store do
         process_actions(actions, module)
 
         plans
-        |> Config.watches
+        |> Plan.watches
         |> Enum.each(fn {layer, plan} -> start_watch(layer, plan, module) end)
 
         {:ok, %{config: config, table: module}}

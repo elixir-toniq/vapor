@@ -1,4 +1,4 @@
-defmodule Vapor.Provider.File do
+defmodule Vapor.Plan.File do
   @moduledoc """
   Module for loading supported file format configs
   Supported file formats: .json, .toml, .yaml

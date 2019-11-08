@@ -1,4 +1,4 @@
-defmodule Vapor.Provider.Env do
+defmodule Vapor.Plan.Env do
   @moduledoc """
   The Env config module provides support for pulling configuration values
   from the environment. It can do this by either specifying a prefix or by

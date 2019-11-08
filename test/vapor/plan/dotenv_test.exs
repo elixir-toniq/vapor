@@ -1,7 +1,7 @@
-defmodule Vapor.Provider.DotenvTest do
+defmodule Vapor.Plan.DotenvTest do
   use ExUnit.Case, async: false
 
-  alias Vapor.Provider.Dotenv
+  alias Vapor.Plan.Dotenv
 
   describe "default/0" do
     setup do

@@ -1,4 +1,4 @@
-defmodule Vapor.Provider.Dotenv do
+defmodule Vapor.Plan.Dotenv do
   @moduledoc """
   The dotenv config provider will look for a `.env` file and load all of
   the values for that file. The values can be written like so:
