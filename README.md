@@ -27,7 +27,7 @@ release and any kernel modules have started.
 
 Add vapor to your mix dependencies:
 
-```
+```elixir
 def deps do
   [
     {:vapor, "~> 0.2"},
@@ -41,16 +41,16 @@ end
 defmodule VaporExample.Config do
   use Vapor
 
-  alias Vapor.Config
-  alias Vapor.Provider.{File, Env}
+  alias Vapor.Plan
+  alias Vapor.Plan.{File, Env}
 
   def start_link(_args \\ []) do
-    config =
-      Config.default()
-      |> Config.merge(File.with_name("$HOME/.vapor/config.json"))
-      |> Config.merge(Env.with_prefix("APP"))
+    plan =
+      Plan.default()
+      |> Plan.merge(File.with_name("$HOME/.vapor/config.json"))
+      |> Plan.merge(Env.with_prefix("APP"))
 
-    Vapor.start_link(__MODULE__, config, name: __MODULE__)
+    Vapor.start_link(__MODULE__, plan, name: __MODULE__)
   end
 end
 
@@ -84,11 +84,11 @@ During the init process Vapor will block until the configuration is loaded. If a
 Vapor will apply configuration in the order that it is merged. In the example:
 
 ```elixir
-config =
-  Config.default()
-  |> Config.merge(Dotenv.default())
-  |> Config.merge(File.with_name("$HOME/.vapor/config.json"))
-  |> Config.merge(Env.with_prefix("APP"))
+plan =
+  Plan.default()
+  |> Plan.merge(Dotenv.default())
+  |> Plan.merge(File.with_name("$HOME/.vapor/config.json"))
+  |> Plan.merge(Env.with_prefix("APP"))
 ```
 
 Env will have the highest precedence, followed by File, and finally Dotenv.

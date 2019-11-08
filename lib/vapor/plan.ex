@@ -1,4 +1,4 @@
-defmodule Vapor.Config do
+defmodule Vapor.Plan do
   @moduledoc """
   This module provides conveniences for creating dynamic configuration layouts
   and overlays.

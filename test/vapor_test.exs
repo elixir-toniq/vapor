@@ -2,15 +2,12 @@ defmodule VaporTest do
   use ExUnit.Case, async: false
   doctest Vapor
 
-  alias Vapor.{
-    Config,
-    Provider,
-  }
+  alias Vapor.Plan
 
   defmodule TestConfig do
     use Vapor
 
-    def start_link(config \\ Config.default()) do
+    def start_link(config \\ Plan.default()) do
       Vapor.start_link(__MODULE__, config, name: __MODULE__)
     end
 
@@ -21,7 +18,7 @@ defmodule VaporTest do
 
   describe "configuration" do
     test "can be overriden manually" do
-      config = Config.default()
+      config = Plan.default()
 
       {:ok, _} = TestConfig.start_link(config)
 
@@ -39,8 +36,8 @@ defmodule VaporTest do
 
     test "can pull in the environment" do
       config =
-        Config.default()
-        |> Config.merge(Provider.Env.with_prefix("APP"))
+        Plan.default()
+        |> Plan.merge(Plan.Env.with_prefix("APP"))
 
       System.put_env("APP_FOO", "foo")
       System.put_env("APP_BAR", "bar")
@@ -55,9 +52,9 @@ defmodule VaporTest do
 
     test "can be stacked" do
       config =
-        Config.default()
-        |> Config.merge(Provider.Env.with_prefix("APP"))
-        |> Config.merge(Provider.File.with_name("test/support/settings.json"))
+        Plan.default()
+        |> Plan.merge(Plan.Env.with_prefix("APP"))
+        |> Plan.merge(Plan.File.with_name("test/support/settings.json"))
 
       System.put_env("APP_FOO", "env foo")
       System.put_env("APP_BAR", "env bar")
@@ -73,9 +70,9 @@ defmodule VaporTest do
 
     test "path lists can be stacked" do
       config =
-        Config.default()
-        |> Config.merge(Provider.Env.with_prefix("APP"))
-        |> Config.merge(Provider.File.with_name("test/support/settings.json"))
+        Plan.default()
+        |> Plan.merge(Plan.Env.with_prefix("APP"))
+        |> Plan.merge(Plan.File.with_name("test/support/settings.json"))
 
       System.put_env("APP_BIZ_BOZ", "env biz boz")
 
@@ -88,9 +85,9 @@ defmodule VaporTest do
 
     test "manual config always takes precedence" do
       config =
-        Config.default()
-        |> Config.watch(Provider.Env.with_prefix("APP"), refresh_interval: 100)
-        |> Config.merge(Provider.File.with_name("test/support/settings.json"))
+        Plan.default()
+        |> Plan.watch(Plan.Env.with_prefix("APP"), refresh_interval: 100)
+        |> Plan.merge(Plan.File.with_name("test/support/settings.json"))
 
       System.put_env("APP_FOO", "env foo")
       System.put_env("APP_BAR", "env bar")
@@ -118,9 +115,9 @@ defmodule VaporTest do
 
     test "sources can be watched for updates but still stack" do
       config =
-        Config.default()
-        |> Config.watch(Provider.Env.with_prefix("APP"), refresh_interval: 100)
-        |> Config.merge(Provider.File.with_name("test/support/settings.json"))
+        Plan.default()
+        |> Plan.watch(Plan.Env.with_prefix("APP"), refresh_interval: 100)
+        |> Plan.merge(Plan.File.with_name("test/support/settings.json"))
 
       System.put_env("APP_FOO", "env foo")
       System.put_env("APP_BAR", "env bar")
@@ -144,8 +141,8 @@ defmodule VaporTest do
 
     test "reads config from toml" do
       config =
-        Config.default()
-        |> Config.merge(Provider.File.with_name("test/support/settings.toml"))
+        Plan.default()
+        |> Plan.merge(Plan.File.with_name("test/support/settings.toml"))
 
       {:ok, _} = TestConfig.start_link(config)
 
@@ -158,8 +155,8 @@ defmodule VaporTest do
 
     test "reads config from yaml" do
       config =
-        Config.default()
-        |> Config.merge(Provider.File.with_name("test/support/settings.yaml"))
+        Plan.default()
+        |> Plan.merge(Plan.File.with_name("test/support/settings.yaml"))
 
       {:ok, _} = TestConfig.start_link(config)
 
