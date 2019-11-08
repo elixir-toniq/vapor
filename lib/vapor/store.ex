@@ -44,8 +44,8 @@ defmodule Vapor.Store do
 
         {:ok, %{config: config, table: module}}
 
-      {:error, _} ->
-        {:stop, :could_not_load_config}
+      {:error, error} ->
+        {:stop, {:could_not_load_config, error}}
     end
   end
 

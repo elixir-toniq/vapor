@@ -47,16 +47,19 @@ defmodule Vapor.Provider.Env do
     def load(%{prefix: :none, bindings: bindings}) do
       envs = System.get_env()
 
+      bindings = Map.new(bindings, fn {key, env} -> {Atom.to_string(key), env} end)
+
       bound_envs =
         bindings
-        |> Enum.into(%{}, fn {key, env} -> {Atom.to_string(key), Map.get(envs, env, :missing)} end)
+        |> Map.new(fn {key, env} -> {key, Map.get(envs, env, :missing)} end)
 
       missing =
         bound_envs
-        |> Enum.filter(fn {_, v} -> v == :missing end)
+        |> Enum.filter(fn {_, env} -> env == :missing end)
+        |> Enum.map(fn {k, :missing} -> Map.get(bindings, k) end)
 
       if Enum.any?(missing) do
-        {:error, missing}
+        {:error, "ENV vars not set: #{Enum.join(missing, ", ")}"}
       else
         {:ok, bound_envs}
       end
