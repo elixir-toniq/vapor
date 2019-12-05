@@ -1,11 +1,14 @@
-defmodule Vapor.Plan.DotenvTest do
+defmodule Vapor.Provider.DotenvTest do
   use ExUnit.Case, async: false
 
-  alias Vapor.Plan.Dotenv
+  alias Vapor.Provider.Dotenv
 
   describe "default/0" do
     setup do
       File.rm(".env")
+      System.delete_env("FOO")
+      System.delete_env("BAR")
+      System.delete_env("BAZ")
 
       on_exit fn ->
         File.rm(".env")
@@ -22,15 +25,15 @@ defmodule Vapor.Plan.DotenvTest do
       """
       File.write(".env", contents)
 
-      plan = Dotenv.default()
-      {:ok, envs} = Vapor.Provider.load(plan)
-      assert envs[["foo"]] == "foo"
-      assert envs[["bar"]] == "bar"
-      assert envs[["baz"]] == "this is a baz"
+      plan = %Dotenv{}
+      assert {:ok, %{}} == Vapor.Provider.load(plan)
+      assert System.get_env("FOO") == "foo"
+      assert System.get_env("BAR") == "bar"
+      assert System.get_env("BAZ") == "this is a baz"
     end
 
     test "returns correctly if the file doesn't exist" do
-      plan = Dotenv.default()
+      plan = %Dotenv{}
       {:ok, envs} = Vapor.Provider.load(plan)
       assert envs == %{}
     end
@@ -43,9 +46,11 @@ defmodule Vapor.Plan.DotenvTest do
       """
       File.write(".env", contents)
 
-      plan = Dotenv.default()
-      {:ok, envs} = Vapor.Provider.load(plan)
-      assert envs == %{["foo"] => "foo"}
+      plan = %Dotenv{}
+      Vapor.Provider.load(plan)
+      assert System.get_env("FOO") == "foo"
+      assert System.get_env("BAR") == nil
+      assert System.get_env("BAZ") == nil
     end
 
     test "ignores comment lines" do
@@ -57,9 +62,11 @@ defmodule Vapor.Plan.DotenvTest do
       """
       File.write(".env", contents)
 
-      plan = Dotenv.default()
-      {:ok, envs} = Vapor.Provider.load(plan)
-      assert envs == %{["foo"] => "foo"}
+      plan = %Dotenv{}
+      Vapor.Provider.load(plan)
+      assert System.get_env("FOO") == "foo"
+      assert System.get_env("BAR") == nil
+      assert System.get_env("BAZ") == nil
     end
   end
 
@@ -82,11 +89,11 @@ defmodule Vapor.Plan.DotenvTest do
       """
       File.write(".env.dev", contents)
 
-      plan = Dotenv.with_file(".env.dev")
-      {:ok, envs} = Vapor.Provider.load(plan)
-      assert envs[["foo"]] == "foo"
-      assert envs[["bar"]] == "bar"
-      assert envs[["baz"]] == "this is a baz"
+      plan = %Dotenv{filename: ".env.dev"}
+      Vapor.Provider.load(plan)
+      assert System.get_env("FOO") == "foo"
+      assert System.get_env("BAR") == "bar"
+      assert System.get_env("BAZ") == "this is a baz"
     end
   end
 end

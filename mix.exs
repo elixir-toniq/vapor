@@ -36,6 +36,7 @@ defmodule Vapor.Mixfile do
       {:jason, "~> 1.1"},
       {:toml, "~> 0.3"},
       {:yaml_elixir, "~> 2.1"},
+      {:norm, "~> 0.9"},
 
       # dev and test dependencies
       {:credo, "~> 1.0", only: [:dev]},

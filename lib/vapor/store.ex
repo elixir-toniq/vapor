@@ -10,20 +10,19 @@ defmodule Vapor.Store do
 
   alias Vapor.{
     Configuration,
-    Plan,
     Provider,
     Watch,
   }
 
-  def start_link({module, plans}) do
-    GenServer.start_link(__MODULE__, {module, plans}, name: module)
+  def start_link({module, config}) do
+    GenServer.start_link(__MODULE__, {module, config}, name: module)
   end
 
   def update(store, layer, new_config) do
     GenServer.call(store, {:update, layer, new_config})
   end
 
-  def init({module, plans}) do
+  def init({module, config}) do
     table_opts = [
       :set,
       :protected,
@@ -33,16 +32,23 @@ defmodule Vapor.Store do
 
     ^module = :ets.new(module, table_opts)
 
-    case load(plans) do
+    case load(config.plan) do
       {:ok, layers} ->
-        {config, actions} = Configuration.new(layers)
-        process_actions(actions, module)
+        translations = config[:translations] || []
 
-        plans
-        |> Plan.watches
-        |> Enum.each(fn {layer, plan} -> start_watch(layer, plan, module) end)
+        merged =
+          layers
+          |> Enum.reduce(%{}, fn l, acc -> Map.merge(acc, Enum.into(l, %{})) end)
+          |> Enum.map(& do_translation(&1, translations))
+          |> Enum.into(%{})
 
-        {:ok, %{config: config, table: module}}
+        with {:ok, values} <- module.init(merged) do
+          for {key, value} <- values do
+            :ets.insert(module, {key, value})
+          end
+
+          {:ok, %{config: config, table: module}}
+        end
 
       {:error, error} ->
         {:stop, {:could_not_load_config, error}}
@@ -57,8 +63,8 @@ defmodule Vapor.Store do
   end
 
   def handle_call({:set, key, value}, _from, %{config: config}=state) do
-    {new_config, actions} = Configuration.set(config, key, value)
-    process_actions(actions, state.table)
+    # {new_config, actions} = Configuration.set(config, key, value)
+    # process_actions(actions, state.table)
 
     {:reply, {:ok, value}, %{state | config: new_config}}
   end
@@ -75,23 +81,28 @@ defmodule Vapor.Store do
     end)
   end
 
-  defp load(plans) when is_map(plans) do
+  defp load(providers) do
     results =
-      plans
-      |> Enum.map(fn {key, plan} -> {key, Provider.load(plan.provider)} end)
+      providers
+      |> Enum.map(fn provider -> Provider.load(provider) end)
 
     errors =
       results
-      |> Enum.filter(fn {_, {result, _}} -> result == :error end)
+      |> Enum.filter(fn {result, _} -> result == :error end)
 
     if Enum.any?(errors) do
       {:error, errors}
     else
-      layers =
-        results
-        |> Enum.into(%{}, fn {key, {:ok, v}} -> {key, v} end)
+      layers = Enum.into(results, [], fn {:ok, v} -> v end)
 
       {:ok, layers}
+    end
+  end
+
+  defp do_translation({key, value}, translations) do
+    case Enum.find(translations, fn {k, _f} -> key == k end) do
+      {_, f} -> {key, f.(value)}
+      _ -> {key, value}
     end
   end
 

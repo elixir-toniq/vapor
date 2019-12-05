@@ -1,4 +1,4 @@
-defmodule Vapor.Plan.Dotenv do
+defmodule Vapor.Provider.Dotenv do
   @moduledoc """
   The dotenv config provider will look for a `.env` file and load all of
   the values for that file. The values can be written like so:
@@ -17,19 +17,14 @@ defmodule Vapor.Plan.Dotenv do
   """
   defstruct filename: ".env"
 
-  def default do
-    %__MODULE__{}
-  end
-
-  def with_file(file) do
-    %__MODULE__{filename: file}
-  end
-
   defimpl Vapor.Provider do
     def load(%{filename: filename}) do
       case File.read(filename) do
         {:ok, contents} ->
-          {:ok, parse(contents)}
+          for {k, v} <- parse(contents) do
+            System.put_env(k, v)
+          end
+          {:ok, %{}}
 
         _ ->
           {:ok, %{}}
@@ -43,8 +38,7 @@ defmodule Vapor.Plan.Dotenv do
       |> Enum.map(fn pair -> String.split(pair, "=") end)
       |> Enum.filter(&good_pair/1)
       |> Enum.map(fn [key, value] -> {String.trim(key), String.trim(value)} end)
-      |> Enum.map(fn {key, value} -> {normalize(key), value} end)
-      |> Enum.into(Map.new())
+      |> Enum.map(fn {key, value} -> {key, value} end)
     end
 
     defp comment?(line) do
@@ -59,12 +53,6 @@ defmodule Vapor.Plan.Dotenv do
         _ ->
           false
       end
-    end
-
-    defp normalize(str) do
-      str
-      |> String.downcase()
-      |> String.split("_")
     end
   end
 end
