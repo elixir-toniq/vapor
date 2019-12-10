@@ -8,7 +8,7 @@ defmodule VaporTest do
   defmodule TestConfig do
     use Vapor
 
-    def start_link(config \\ Plan.default()) do
+    def start_link(config) do
       Vapor.start_link(__MODULE__, config, name: __MODULE__)
     end
 
@@ -18,7 +18,7 @@ defmodule VaporTest do
   end
 
   setup do
-    plan = [
+    providers = [
       %Env{
         bindings: [
           foo: "APP_FOO",
@@ -27,7 +27,7 @@ defmodule VaporTest do
       }
     ]
 
-    config = %{plan: plan}
+    config = %{providers: providers}
 
     {:ok, config: config}
   end
@@ -135,7 +135,7 @@ defmodule VaporTest do
     System.put_env("APP_FOO", "foo")
     System.put_env("APP_BAR", "bar")
 
-    plan = [
+    providers = [
       %Env{
         bindings: [
           foo: "APP_FOO",
@@ -149,7 +149,7 @@ defmodule VaporTest do
       foo: fn s -> String.upcase(s) end
     ]
 
-    config = %{plan: plan, translations: translations}
+    config = %{providers: providers, translations: translations}
 
     File.write!("test.json", Jason.encode!(%{foo: "foo"}))
 

@@ -1,17 +1,11 @@
 defmodule Vapor.Provider.Env do
   @moduledoc """
   The Env config module provides support for pulling configuration values
-  from the environment. It can do this by either specifying a prefix or by
-  specifying specific bindings from keys to environment variables.
+  from the environment. Bindings must be specified at a keyword list.
 
-  ## Loading configuration by prefix
+  ## Example
 
-  If a prefix is used then the variable will be normalized by removing the
-  prefix, downcasing the text, and converting all underscores into nested keys
-
-  ## Loading with bindings
-
-  Specific bindings be also be specified. They are case sensitive
+      %Env{bindings: [foo: "FOO", bar: "VAR_BAR"]}
   """
 
   defstruct bindings: []

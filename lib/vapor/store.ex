@@ -23,7 +23,7 @@ defmodule Vapor.Store do
   end
 
   def init({module, config}) do
-    plan = Plan.new(config.plan)
+    plan = Plan.new(config.providers)
 
     case Plan.load(plan) do
       {:ok, layers} ->

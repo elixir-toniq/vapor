@@ -13,13 +13,10 @@ defmodule Vapor do
   @type value :: String.t() | integer | float | boolean
 
   @doc """
-  Fetches a value from the config under the key provided. Accept a list forming a path of keys.
-  You need to specify a type to convert the value into through the `as:` element.
-  The accepted types are `:string`, `:int`, `:float` and `:bool`
+  Fetches a value from the config under the key provided.
 
   ## Example
       VaporExample.Config.get(:key)
-
   """
   @callback get(key :: key) :: term() | nil
 
@@ -96,6 +93,7 @@ defmodule Vapor do
     Supervisor.stop(:"#{name}_sup")
   end
 
+  @doc false
   def init({module, config}) do
     table_opts = [
       :set,

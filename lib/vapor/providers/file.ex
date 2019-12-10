@@ -1,7 +1,13 @@
 defmodule Vapor.Provider.File do
   @moduledoc """
   Module for loading supported file format configs
-  Supported file formats: .json, .toml, .yaml
+  Supported file formats: .json, .toml, .yaml. Bindings to specific keys must
+  be provided as a keyword list. The values for each key must be either a string
+  or a path based on the Access protocol.
+
+  ## Example
+
+      %File{path: "config.toml", bindings: [foo: "foo", nested: ["some", "nested", "value"]]}
   """
   import Norm
 
@@ -12,7 +18,7 @@ defmodule Vapor.Provider.File do
       spec(is_atom()),
       one_of([
         spec(is_binary()),
-        coll_of(spec(is_binary())),
+        spec(is_list()),
       ])
     })
 
