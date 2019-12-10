@@ -37,12 +37,5 @@ defmodule Vapor.Provider.Env do
         {:ok, bound_envs}
       end
     end
-
-    defp normalize(str, prefix) do
-      str
-      |> String.replace_leading(prefix, "")
-      |> String.downcase()
-      |> String.split("_")
-    end
   end
 end

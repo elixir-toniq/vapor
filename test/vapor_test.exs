@@ -2,6 +2,7 @@ defmodule VaporTest do
   use ExUnit.Case, async: false
   doctest Vapor
 
+  alias Vapor.Provider
   alias Vapor.Provider.Env
 
   defmodule TestConfig do
@@ -68,10 +69,10 @@ defmodule VaporTest do
       end
 
       def init(values) do
-        values = Map.put(values, :foo, 1337)
-        values = Map.put(values, :other, "test")
+        Application.put_env(:test_config, :foo, values[:foo])
+        Application.put_env(:test_config, :bar, values[:bar])
 
-        {:ok, values}
+        :ok
       end
 
       def stop do
@@ -88,10 +89,13 @@ defmodule VaporTest do
 
     ConfigWithInit.start_link(Map.put(config, :translations, translations))
 
-    assert ConfigWithInit.get(:foo) == 1337
-    assert ConfigWithInit.get(:other) == "test"
+    assert Application.get_env(:test_config, :foo) == 1
+    assert Application.get_env(:test_config, :bar) == 2
 
     ConfigWithInit.stop()
+
+    assert Application.delete_env(:test_config, :foo)
+    assert Application.delete_env(:test_config, :bar)
   end
 
   test "overrides always take precedence", %{config: config} do
@@ -108,6 +112,54 @@ defmodule VaporTest do
 
     assert TestConfig.get(:foo) == "new foo"
     assert TestConfig.get(:other) == "new value"
+  end
+
+  test "providers can be watched" do
+    System.put_env("APP_FOO", "foo")
+    System.put_env("APP_BAR", "bar")
+
+    plan = [
+      %Env{
+        bindings: [
+          foo: "APP_FOO",
+          bar: "APP_BAR",
+        ]
+      },
+      {%Provider.File{path: "test.json", bindings: [foo: "foo"]}, [watch: true, refresh_interval: 100]},
+    ]
+
+    translations = [
+      foo: fn s -> String.upcase(s) end
+    ]
+
+    config = %{plan: plan, translations: translations}
+
+    File.write!("test.json", Jason.encode!(%{foo: "foo"}))
+
+    TestConfig.start_link(config)
+    assert TestConfig.get(:foo) == "FOO"
+
+    File.write!("test.json", Jason.encode!(%{foo: "new foo"}))
+
+    eventually(fn ->
+      assert TestConfig.get(:foo) == "NEW FOO"
+    end)
+
+    TestConfig.stop()
+
+    File.rm("test.json")
+  end
+
+  defp eventually(f, count \\ 0) do
+    f.()
+  rescue
+    e ->
+      if count > 5 do
+        reraise e, __STACKTRACE__
+      else
+        :timer.sleep(100)
+        eventually(f, count + 1)
+      end
   end
 end
 

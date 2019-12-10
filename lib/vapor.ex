@@ -35,7 +35,7 @@ defmodule Vapor do
   Optional callback. Called when the configuration server starts. Passes the map
   of the reified values.
   """
-  @callback init([{key, value}]) :: {:ok, value}
+  @callback init([{key, value}]) :: :ok
 
   defmacro __using__(_opts) do
     quote do
@@ -65,8 +65,8 @@ defmodule Vapor do
         end
       end
 
-      def init(values) do
-        {:ok, values}
+      def init(_values) do
+        :ok
       end
 
       defoverridable [init: 1]
@@ -93,6 +93,15 @@ defmodule Vapor do
   end
 
   def init({module, config}) do
+    table_opts = [
+      :set,
+      :public,
+      :named_table,
+      read_concurrency: true,
+    ]
+
+    ^module = :ets.new(module, table_opts)
+
     children = [
       {Watch.Supervisor, [name: Watch.Supervisor.sup_name(module)]},
       {Store, {module, config}}

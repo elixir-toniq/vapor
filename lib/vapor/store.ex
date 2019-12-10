@@ -10,7 +10,7 @@ defmodule Vapor.Store do
 
   alias Vapor.{
     Configuration,
-    Provider,
+    Plan,
     Watch,
   }
 
@@ -23,28 +23,17 @@ defmodule Vapor.Store do
   end
 
   def init({module, config}) do
-    table_opts = [
-      :set,
-      :protected,
-      :named_table,
-      read_concurrency: true,
-    ]
+    plan = Plan.new(config.plan)
 
-    ^module = :ets.new(module, table_opts)
-
-    case load(config.plan) do
+    case Plan.load(plan) do
       {:ok, layers} ->
-        translations = config[:translations] || []
+        {config, merged, actions} = Configuration.new(layers, config[:translations] || [])
 
-        merged =
-          layers
-          |> Enum.reduce(%{}, fn l, acc -> Map.merge(acc, Enum.into(l, %{})) end)
-          |> Enum.map(& do_translation(&1, translations))
-          |> Enum.into(%{})
+        with :ok <- module.init(merged) do
+          process_actions(actions, module)
 
-        with {:ok, values} <- module.init(merged) do
-          for {key, value} <- values do
-            :ets.insert(module, {key, value})
+          for watch <- Plan.watches(plan) do
+            start_watch(watch, module)
           end
 
           {:ok, %{config: config, table: module}}
@@ -63,8 +52,8 @@ defmodule Vapor.Store do
   end
 
   def handle_call({:set, key, value}, _from, %{config: config}=state) do
-    # {new_config, actions} = Configuration.set(config, key, value)
-    # process_actions(actions, state.table)
+    {new_config, actions} = Configuration.set(config, key, value)
+    process_actions(actions, state.table)
 
     {:reply, {:ok, value}, %{state | config: new_config}}
   end
@@ -81,32 +70,7 @@ defmodule Vapor.Store do
     end)
   end
 
-  defp load(providers) do
-    results =
-      providers
-      |> Enum.map(fn provider -> Provider.load(provider) end)
-
-    errors =
-      results
-      |> Enum.filter(fn {result, _} -> result == :error end)
-
-    if Enum.any?(errors) do
-      {:error, errors}
-    else
-      layers = Enum.into(results, [], fn {:ok, v} -> v end)
-
-      {:ok, layers}
-    end
-  end
-
-  defp do_translation({key, value}, translations) do
-    case Enum.find(translations, fn {k, _f} -> key == k end) do
-      {_, f} -> {key, f.(value)}
-      _ -> {key, value}
-    end
-  end
-
-  defp start_watch(layer, plan, module) do
-    Watch.Supervisor.start_child(module, %{layer: layer, plan: plan, store: module})
+  defp start_watch({layer, provider}, module) do
+    Watch.Supervisor.start_child(module, %{layer: layer, provider: provider, store: module})
   end
 end
