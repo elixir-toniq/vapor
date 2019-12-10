@@ -41,16 +41,17 @@ end
 defmodule VaporExample.Config do
   use Vapor
 
-  alias Vapor.Plan
-  alias Vapor.Plan.{File, Env}
+  alias Vapor.Provider
+  alias Vapor.Provider.{File, Env}
 
   def start_link(_args \\ []) do
-    plan =
-      Plan.default()
-      |> Plan.merge(File.with_name("$HOME/.vapor/config.json"))
-      |> Plan.merge(Env.with_prefix("APP"))
+    providers = [
+      %Env{bindings: [db_name: "DB_NAME", port: "PORT"]},
+      %File{path: "config.toml", bindings: [kafka_brokers: "kafka.brokers"]},
+    ]
+    config = %{providers: providers}
 
-    Vapor.start_link(__MODULE__, plan, name: __MODULE__)
+    Vapor.start_link(__MODULE__, config, name: __MODULE__)
   end
 end
 
@@ -81,24 +82,57 @@ During the init process Vapor will block until the configuration is loaded. If a
 
 ### Precedence
 
-Vapor will apply configuration in the order that it is merged. In the example:
+Vapor merges the configuration based on the order that the providers are specified.
 
 ```elixir
-plan =
-  Plan.default()
-  |> Plan.merge(Dotenv.default())
-  |> Plan.merge(File.with_name("$HOME/.vapor/config.json"))
-  |> Plan.merge(Env.with_prefix("APP"))
+providers = [
+  %Dotenv{},
+  %File{path: "$HOME/.vapor/config.json", bindings: []},
+  %Env{bindings: []},
+]
 ```
 
 Env will have the highest precedence, followed by File, and finally Dotenv.
 
 Manually setting a configuration value always take precedence over any other configuration source.
 
-### Reading config files
+### Translating config values
 
-Config files can be read from a number of different file types including
-JSON, TOML, and YAML. Vapor determines which file format to use based on the file extension.
+Its often useful to translate configuration values into something meaningful
+for your application. Vapor provides translation options to allow you to do any
+type conversions or data manipulation.
+
+```elixir
+providers = [
+  %Env{bindings: [db_name: "DB_NAME", port: "PORT"]},
+  %File{path: "config.toml", bindings: [kafka_brokers: "kafka.brokers"]},
+]
+
+translations = [
+  port: fn s -> String.to_integer(s) end,
+  kafka_brokers: fn str ->
+    str
+    |> String.split(",")
+    |> Enum.map(fn broker ->
+      [host, port] = String.split(broker, ":")
+      {host, String.to_integer(port)}
+    end)
+  end
+]
+
+config = %{providers: providers}
+
+Vapor.start_link(__MODULE__, config, name: __MODULE__)
+```
+
+### Getting config values
+
+You can get values from your configuration like so:
+
+```elixir
+VaporExample.Config.get(:port)
+VaporExample.Config.get(:kafka_brokers)
+```
 
 ### Setting config values
 
@@ -106,11 +140,16 @@ Occasionally you'll need to set values programatically. You can do that
 like so:
 
 ```elixir
-VaporExample.Config.set("key", "value")
+VaporExample.Config.set(:key, "value")
 ```
 
 Any manual changes to a configuration value will always take precedence over
 other configuration changes even if the underlying sources change.
+
+### Reading config files
+
+Config files can be read from a number of different file types including
+JSON, TOML, and YAML. Vapor determines which file format to use based on the file extension.
 
 ### Watching config files for changes
 
@@ -118,55 +157,41 @@ You can tell Vapor to watch for changes in your various sources. This
 allows you to easily change an application by changing your configuration
 source. If you need to take actions (such as restarting processes in your
 system) when vapor notices a config change you can implement the
-`handle_change/2` callback:
+`handle_change/1` callback:
 
 ```elixir
 defmodule VaporExample.Config do
-  def handle_change(source, config) do
+  def start_link(_) do
+    providers = [
+      %Env{bindings: [db_name: "DB_NAME", port: "PORT"]},
+      {%File{path: "config.toml", bindings: [kafka_brokers: "kafka.brokers"]},
+        [watch: true, refresh_interval: 5_000]},
+    ]
+
+    Vapor.start_link(__MODULE__, %{providers: providers}, name: __MODULE__)
+  end
+
+  def handle_change(config) do
     # take some action here...
   end
 end
-```
-
-### Getting config values
-
-There are multiple ways of getting values out of the configuration:
-
-```elixir
-VaporExample.Config.get("config_key", as: :string)
-VaporExample.Config.get("config_key", as: :int)
-VaporExample.Config.get("config_key", as: :float)
-VaporExample.Config.get("config_key", as: :bool)
-```
-
-If you need to read a nested value you can provide a path to the value
-needed like so:
-
-```elixir
-VaporExample.Config.get(["my_app", "repo", "port"], as: :int)
 ```
 
 ### Overriding application environment
 
 In some cases you may want to overwrite the keys in the application
 environment for convenience. While this is generally discouraged it can be
-a quick way to adopt Vapor. To do this automatically you can provide the
-`overwrite_application_env: true` option when starting a config. Vapor
-will insert values based on the application name. It will convert each key
-into an atom and insert the values into application env.
-
-If you would like to do this manually then you can overwrite the init
-callback like so:
+a quick way to adopt Vapor. You can do this manually in your configs init callback.
 
 ```elixir
 defmodule VaporExample.Config do
   def init(config) do
     Application.put_env(:my_app, MyApp.Repo, [
-      database: Vapor.get(config, ["my_app", "repo", "database"], as: :string),
-      username: Vapor.get(config, ["my_app", "repo", "username"], as: :string),
-      password: Vapor.get(config, ["my_app", "repo", "password"], as: :string),
-      hostname: Vapor.get(config, ["my_app", "repo", "hostname"], as: :string),
-      port: Vapor.get(config, ["my_app", "repo", "port"], as: :int)
+      database: config[:database],
+      username: config[:database_user],
+      password: config[:database_pasword],
+      hostname: config[:database_host],
+      port: config[:database_port],
     ])
 
     :ok

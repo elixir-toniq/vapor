@@ -11,38 +11,33 @@ defmodule Vapor.Store do
   alias Vapor.{
     Configuration,
     Plan,
-    Provider,
     Watch,
   }
 
-  def start_link({module, plans}) do
-    GenServer.start_link(__MODULE__, {module, plans}, name: module)
+  def start_link({module, config}) do
+    GenServer.start_link(__MODULE__, {module, config}, name: module)
   end
 
   def update(store, layer, new_config) do
     GenServer.call(store, {:update, layer, new_config})
   end
 
-  def init({module, plans}) do
-    table_opts = [
-      :set,
-      :protected,
-      :named_table,
-      read_concurrency: true,
-    ]
+  def init({module, config}) do
+    plan = Plan.new(config.providers)
 
-    ^module = :ets.new(module, table_opts)
-
-    case load(plans) do
+    case Plan.load(plan) do
       {:ok, layers} ->
-        {config, actions} = Configuration.new(layers)
-        process_actions(actions, module)
+        {config, merged, actions} = Configuration.new(layers, config[:translations] || [])
 
-        plans
-        |> Plan.watches
-        |> Enum.each(fn {layer, plan} -> start_watch(layer, plan, module) end)
+        with :ok <- module.init(merged) do
+          process_actions(actions, module)
 
-        {:ok, %{config: config, table: module}}
+          for watch <- Plan.watches(plan) do
+            start_watch(watch, module)
+          end
+
+          {:ok, %{config: config, table: module}}
+        end
 
       {:error, error} ->
         {:stop, {:could_not_load_config, error}}
@@ -50,15 +45,17 @@ defmodule Vapor.Store do
   end
 
   def handle_call({:update, layer, new_values}, _, %{config: config}=state) do
-    {new_config, actions} = Configuration.update(config, layer, new_values)
+    {new_config, merged, actions} = Configuration.update(config, layer, new_values)
     process_actions(actions, state.table)
+    state.table.handle_change(merged)
 
     {:reply, :ok, %{state | config: new_config}}
   end
 
   def handle_call({:set, key, value}, _from, %{config: config}=state) do
-    {new_config, actions} = Configuration.set(config, key, value)
+    {new_config, merged, actions} = Configuration.set(config, key, value)
     process_actions(actions, state.table)
+    state.table.handle_change(merged)
 
     {:reply, {:ok, value}, %{state | config: new_config}}
   end
@@ -75,27 +72,7 @@ defmodule Vapor.Store do
     end)
   end
 
-  defp load(plans) when is_map(plans) do
-    results =
-      plans
-      |> Enum.map(fn {key, plan} -> {key, Provider.load(plan.provider)} end)
-
-    errors =
-      results
-      |> Enum.filter(fn {_, {result, _}} -> result == :error end)
-
-    if Enum.any?(errors) do
-      {:error, errors}
-    else
-      layers =
-        results
-        |> Enum.into(%{}, fn {key, {:ok, v}} -> {key, v} end)
-
-      {:ok, layers}
-    end
-  end
-
-  defp start_watch(layer, plan, module) do
-    Watch.Supervisor.start_child(module, %{layer: layer, plan: plan, store: module})
+  defp start_watch({layer, provider}, module) do
+    Watch.Supervisor.start_child(module, %{layer: layer, provider: provider, store: module})
   end
 end

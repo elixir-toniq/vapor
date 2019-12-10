@@ -2,71 +2,67 @@ defmodule Vapor.Configuration do
   @moduledoc false
   # Manages a layered set of configuration values.
   # Not meant to be consumed by the end user
+  import Norm
 
-  defstruct layers: %{overrides: %{}}, versions: []
+  defstruct [
+    layers: %{overrides: %{}},
+    translations: []
+  ]
 
-  @typedoc """
-  The path to store the value at. Serves as a key.
-  """
-  @type path :: list(String.t)
-
-  @typedoc """
-  The action needed to achieve consistency with the desired configuration.
-  """
-  @opaque action :: {:upsert, path, term()}
-                | {:delete, path}
-
-  @typedoc """
-  The "layer" for the configuration. Its either an integer or overrides.
-  Higher integers overwrite lower integers
-  """
-  @opaque layer :: integer()
-               | :overrides
-
-  @opaque t :: %__MODULE__{
-    layers: %{required(layer) => map()},
-    versions: [],
-  }
+  def s do
+    schema(%__MODULE__{
+      layers: map_of(one_of([spec(is_atom()), spec(is_integer())]), spec(is_map())),
+      translations: coll_of({spec(is_atom()), spec(is_function())}),
+    })
+  end
 
   @doc """
   Returns a new configuration with an initial set of layers and a list of
   initial actions to run.
   """
-  @spec new(%{}) :: {t(), list(action())}
-  def new(layers) do
+  def new(layers, translations) do
     # We're abusing term ordering here. The `:overrides` atom will always
     # be the highest precedence simply because its an atom
-    configuration = %__MODULE__{layers: Map.merge(%{overrides: %{}}, layers)}
+    configuration = conform!(%__MODULE__{
+      layers: Map.merge(%{overrides: %{}}, layers),
+      translations: translations,
+    }, s())
+
+    merged = materialize(configuration)
 
     actions =
-      configuration
-      |> flatten
-      |> Enum.map(fn {path, value} -> {:upsert, path, value} end)
+      merged
+      |> Enum.map(fn {key, value} -> {:upsert, key, value} end)
 
-    {configuration, actions}
+    {configuration, merged, actions}
   end
 
   @doc """
   Overwrites a value at a given path. Overwrites always take precedence over
   any other configuration values.
   """
-  @spec set(t(), path(), term()) :: {t(), list(action)}
-  def set(config, path, value) do
+  def set(config, key, value) do
     overrides = config.layers.overrides
-    update(config, :overrides, Map.put(overrides, path, value))
+    update(config, :overrides, Map.put(overrides, key, value))
   end
 
   @doc """
   Updates a specific layer in the configuration.
   """
-  @spec update(t(), layer(), map()) :: {t(), list(action)}
   def update(%{layers: ls}=config, layer, value) do
-    old_paths = flatten(config)
+    old_paths = materialize(config)
     new_config = %{config | layers: Map.put(ls, layer, value)}
-    new_paths = flatten(new_config)
+    new_paths = materialize(new_config)
     actions = diff(new_paths, old_paths)
 
-    {new_config, actions}
+    {new_config, new_paths, actions}
+  end
+
+  defp materialize(config) do
+    config
+    |> flatten()
+    |> Enum.map(& do_translation(&1, config.translations))
+    |> Enum.into(%{})
   end
 
   # Takes an old configuration and new configuration and returns a list of
@@ -106,26 +102,14 @@ defmodule Vapor.Configuration do
   defp flatten(%{layers: layers}) do
     layers
     |> Enum.sort(fn {a, _}, {b, _} -> a < b end) # Ensure proper sorting
-    |> Enum.map(fn {_, map} -> pathify_keys(map) end)
-    |> Enum.reduce(%{}, fn keys, acc -> Map.merge(acc, keys) end)
+    |> Enum.map(fn {_, map} -> map end)
+    |> Enum.reduce(%{}, fn map, acc -> Map.merge(acc, map) end)
   end
 
-  defp pathify_keys(map) when is_map(map) do
-    map
-    |> pathify_keys([], [])
-    |> Enum.into(%{})
-  end
-
-  defp pathify_keys(map, path_so_far, completed_keys) do
-    Enum.reduce(map, completed_keys, fn
-      {k, v}, acc when is_map(v) ->
-        pathify_keys(v, [k | path_so_far], acc)
-
-      {k, v}, acc when is_list(k) ->
-        [{k, v} | acc]
-
-      {k, v}, acc ->
-        [{Enum.reverse([k | path_so_far]), v} | acc]
-    end)
+  defp do_translation({key, value}, translations) do
+    case Enum.find(translations, fn {k, _f} -> key == k end) do
+      {_, f} -> {key, f.(value)}
+      _ -> {key, value}
+    end
   end
 end

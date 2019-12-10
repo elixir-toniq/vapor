@@ -13,40 +13,26 @@ defmodule Vapor do
   @type value :: String.t() | integer | float | boolean
 
   @doc """
-  Fetches a value from the config under the key provided. Accept a list forming a path of keys.
-  You need to specify a type to convert the value into through the `as:` element.
-  The accepted types are `:string`, `:int`, `:float` and `:bool`
+  Fetches a value from the config under the key provided.
 
   ## Example
-    VaporExample.Config.get("config_key", as: :string)
-
-    VaporExample.Config.get(["nested", "config_key"], as: :string)
-
+      VaporExample.Config.get(:key)
   """
-  @callback get(key :: key, type :: [as: type]) ::
-              {:ok, value} | {:error, Vapor.ConversionError} | {:error, Vapor.NotFoundError}
-
-  @doc """
-  Similar to `c:get/2` but raise if an error happens
-
-  ## Example
-
-    VaporExample.Config.get!("config_key", as: :string)
-
-    VaporExample.Config.get!(["nested", "config_key"], as: :string)
-  """
-  @callback get!(key :: key, type :: [as: type]) :: value | none
+  @callback get(key :: key) :: term() | nil
 
   @doc """
   Set the value under the key in the store.
 
   ## Example
-
-    VaporExample.Config.set("key", "value")
-
-    VaporExample.Config.set(["nested", "key"], "value")
+      VaporExample.Config.set(:key, "value")
   """
   @callback set(key :: key, value :: value) :: {:ok, value}
+
+  @doc """
+  Optional callback. Called when the configuration server starts. Passes the map
+  of the reified values.
+  """
+  @callback init([{key, value}]) :: :ok
 
   defmacro __using__(_opts) do
     quote do
@@ -62,51 +48,39 @@ defmodule Vapor do
         }
       end
 
-      def set(key, value) when is_binary(key) do
-        set([key], value)
-      end
-
-      def set(key, value) when is_list(key) do
+      def set(key, value) do
         GenServer.call(__MODULE__, {:set, key, value})
       end
 
-      def get(key, as: type) when is_binary(key) do
-        get([key], as: type)
-      end
-
-      def get(key, as: type) when is_list(key) do
+      def get(key) do
         case :ets.lookup(__MODULE__, key) do
           [] ->
-            {:error, Vapor.NotFoundError}
+            nil
 
           [{^key, value}] ->
-            Vapor.Converter.apply(value, type)
+            value
         end
       end
 
-      def get!(key, as: type) when is_binary(key) do
-        get!([key], as: type)
+      def init(_values) do
+        :ok
       end
 
-      def get!(key, as: type) when is_list(key) do
-        case get(key, as: type) do
-          {:ok, val} ->
-            val
-
-          {:error, error} ->
-            raise error, {key, type}
-        end
+      def handle_change(_values) do
+        :ok
       end
+
+      defoverridable [init: 1, handle_change: 1]
     end
   end
 
   @doc """
   Starts a configuration store and any watches.
   """
-  def start_link(module, plans, opts) do
+  def start_link(module, config, opts) do
     if opts[:name] do
       name = Keyword.fetch!(opts, :name)
-      Supervisor.start_link(__MODULE__, {module, plans}, name: :"#{name}_sup")
+      Supervisor.start_link(__MODULE__, {module, config}, name: :"#{name}_sup")
     else
       raise Vapor.ConfigurationError, "must supply a `:name` argument"
     end
@@ -119,10 +93,20 @@ defmodule Vapor do
     Supervisor.stop(:"#{name}_sup")
   end
 
-  def init({module, plans}) do
+  @doc false
+  def init({module, config}) do
+    table_opts = [
+      :set,
+      :public,
+      :named_table,
+      read_concurrency: true,
+    ]
+
+    ^module = :ets.new(module, table_opts)
+
     children = [
       {Watch.Supervisor, [name: Watch.Supervisor.sup_name(module)]},
-      {Store, {module, plans}}
+      {Store, {module, config}}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

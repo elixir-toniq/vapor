@@ -2,12 +2,13 @@ defmodule VaporTest do
   use ExUnit.Case, async: false
   doctest Vapor
 
-  alias Vapor.Plan
+  alias Vapor.Provider
+  alias Vapor.Provider.Env
 
   defmodule TestConfig do
     use Vapor
 
-    def start_link(config \\ Plan.default()) do
+    def start_link(config) do
       Vapor.start_link(__MODULE__, config, name: __MODULE__)
     end
 
@@ -16,221 +17,156 @@ defmodule VaporTest do
     end
   end
 
-  describe "configuration" do
-    test "can be overriden manually" do
-      config = Plan.default()
+  setup do
+    providers = [
+      %Env{
+        bindings: [
+          foo: "APP_FOO",
+          bar: "APP_BAR",
+        ]
+      }
+    ]
 
-      {:ok, _} = TestConfig.start_link(config)
+    config = %{providers: providers}
 
-      TestConfig.set("foo", "foo")
-
-      assert TestConfig.get!("foo", as: :string) == "foo"
-      assert TestConfig.get("blank", as: :string) == {:error, Vapor.NotFoundError}
-
-      assert_raise Vapor.NotFoundError, fn ->
-        TestConfig.get!("blank", as: :string)
-      end
-
-      TestConfig.stop()
-    end
-
-    test "can pull in the environment" do
-      config =
-        Plan.default()
-        |> Plan.merge(Plan.Env.with_prefix("APP"))
-
-      System.put_env("APP_FOO", "foo")
-      System.put_env("APP_BAR", "bar")
-
-      TestConfig.start_link(config)
-
-      assert TestConfig.get!("foo", as: :string) == "foo"
-      assert TestConfig.get!("bar", as: :string) == "bar"
-
-      TestConfig.stop()
-    end
-
-    test "can be stacked" do
-      config =
-        Plan.default()
-        |> Plan.merge(Plan.Env.with_prefix("APP"))
-        |> Plan.merge(Plan.File.with_name("test/support/settings.json"))
-
-      System.put_env("APP_FOO", "env foo")
-      System.put_env("APP_BAR", "env bar")
-
-      TestConfig.start_link(config)
-
-      assert TestConfig.get!("foo", as: :string) == "file foo"
-      assert TestConfig.get!("bar", as: :string) == "env bar"
-      assert TestConfig.get!("baz", as: :string) == "file baz"
-
-      TestConfig.stop()
-    end
-
-    test "path lists can be stacked" do
-      config =
-        Plan.default()
-        |> Plan.merge(Plan.Env.with_prefix("APP"))
-        |> Plan.merge(Plan.File.with_name("test/support/settings.json"))
-
-      System.put_env("APP_BIZ_BOZ", "env biz boz")
-
-      TestConfig.start_link(config)
-
-      assert TestConfig.get!(["biz", "boz"], as: :string) == "file biz boz"
-
-      TestConfig.stop()
-    end
-
-    test "manual config always takes precedence" do
-      config =
-        Plan.default()
-        |> Plan.watch(Plan.Env.with_prefix("APP"), refresh_interval: 100)
-        |> Plan.merge(Plan.File.with_name("test/support/settings.json"))
-
-      System.put_env("APP_FOO", "env foo")
-      System.put_env("APP_BAR", "env bar")
-      System.put_env("APP_FIZ", "env fiz")
-
-      TestConfig.start_link(config)
-
-      TestConfig.set("foo", "manual foo")
-      TestConfig.set("bar", "manual bar")
-
-      System.put_env("APP_FOO", "foo take two")
-      System.put_env("APP_BAR", "bar take two")
-      System.put_env("APP_BAZ", "baz take two")
-      System.put_env("APP_FIZ", "fiz take two")
-
-      eventually(fn ->
-        assert TestConfig.get!("foo", as: :string) == "manual foo"
-        assert TestConfig.get!("bar", as: :string) == "manual bar"
-        assert TestConfig.get!("baz", as: :string) == "file baz"
-        assert TestConfig.get!("fiz", as: :string) == "fiz take two"
-      end)
-
-      TestConfig.stop()
-    end
-
-    test "sources can be watched for updates but still stack" do
-      config =
-        Plan.default()
-        |> Plan.watch(Plan.Env.with_prefix("APP"), refresh_interval: 100)
-        |> Plan.merge(Plan.File.with_name("test/support/settings.json"))
-
-      System.put_env("APP_FOO", "env foo")
-      System.put_env("APP_BAR", "env bar")
-
-      TestConfig.start_link(config)
-
-      assert TestConfig.get!("foo", as: :string) == "file foo"
-      assert TestConfig.get!("bar", as: :string) == "env bar"
-      assert TestConfig.get!("baz", as: :string) == "file baz"
-
-      System.put_env("APP_FOO", "env foo second version")
-      System.put_env("APP_BAR", "env bar second version")
-
-      eventually(fn ->
-        assert TestConfig.get!("foo", as: :string) == "file foo"
-        assert TestConfig.get!("bar", as: :string) == "env bar second version"
-      end)
-
-      TestConfig.stop()
-    end
-
-    test "reads config from toml" do
-      config =
-        Plan.default()
-        |> Plan.merge(Plan.File.with_name("test/support/settings.toml"))
-
-      {:ok, _} = TestConfig.start_link(config)
-
-      assert(TestConfig.get!("foo", as: :string) == "foo toml")
-      assert(TestConfig.get!("bar", as: :string) == "bar toml")
-      assert(TestConfig.get!(["biz", "boz"], as: :string) == "biz boz toml")
-
-      TestConfig.stop()
-    end
-
-    test "reads config from yaml" do
-      config =
-        Plan.default()
-        |> Plan.merge(Plan.File.with_name("test/support/settings.yaml"))
-
-      {:ok, _} = TestConfig.start_link(config)
-
-      assert(TestConfig.get!("foo", as: :string) == "foo yaml")
-      assert(TestConfig.get!("bar", as: :string) == "bar yaml")
-      assert(TestConfig.get!(["biz", "boz"], as: :string) == "biz boz yaml")
-
-      TestConfig.stop()
-    end
+    {:ok, config: config}
   end
 
-  describe "get/2" do
-    test "supports common transforms" do
-      TestConfig.start_link()
+  test "can pull in the environment", %{config: config} do
+    System.put_env("APP_FOO", "foo")
+    System.put_env("APP_BAR", "bar")
 
-      TestConfig.set("string", "string")
-      TestConfig.set("int", "42")
-      TestConfig.set("float", "3.2")
-      TestConfig.set("true", "true")
-      TestConfig.set("false", "false")
+    TestConfig.start_link(config)
 
-      assert TestConfig.get("string", as: :string) == {:ok, "string"}
-      assert TestConfig.get("int", as: :int) == {:ok, 42}
-      assert TestConfig.get("float", as: :float) == {:ok, 3.2}
-      assert TestConfig.get("true", as: :bool) == {:ok, true}
-      assert TestConfig.get("false", as: :bool) == {:ok, false}
+    assert TestConfig.get(:foo) == "foo"
+    assert TestConfig.get(:bar) == "bar"
 
-      TestConfig.stop()
+    TestConfig.stop()
+  end
+
+  test "can provide translations", %{config: config} do
+    System.put_env("APP_FOO", "foo")
+    System.put_env("APP_BAR", "bar")
+    translations = [
+      foo: fn "foo" -> 1 end,
+      bar: fn "bar" -> 2 end,
+    ]
+
+    TestConfig.start_link(Map.put(config, :translations, translations))
+
+    assert TestConfig.get(:foo) == 1
+    assert TestConfig.get(:bar) == 2
+
+    TestConfig.stop()
+  end
+
+  test "calls init with the configuration map", %{config: config} do
+    defmodule ConfigWithInit do
+      use Vapor
+
+      def start_link(config) do
+        Vapor.start_link(__MODULE__, config, name: __MODULE__)
+      end
+
+      def init(values) do
+        Application.put_env(:test_config, :foo, values[:foo])
+        Application.put_env(:test_config, :bar, values[:bar])
+
+        :ok
+      end
+
+      def stop do
+        Vapor.stop(__MODULE__)
+      end
     end
 
-    test "returns errors if conversions fail" do
-      TestConfig.start_link()
+    System.put_env("APP_FOO", "foo")
+    System.put_env("APP_BAR", "bar")
+    translations = [
+      foo: fn "foo" -> 1 end,
+      bar: fn "bar" -> 2 end,
+    ]
 
-      TestConfig.set("string", "string")
+    ConfigWithInit.start_link(Map.put(config, :translations, translations))
 
-      assert TestConfig.get("string", as: :int) == {:error, Vapor.ConversionError}
-      assert TestConfig.get("string", as: :float) == {:error, Vapor.ConversionError}
-      assert TestConfig.get("string", as: :bool) == {:error, Vapor.ConversionError}
+    assert Application.get_env(:test_config, :foo) == 1
+    assert Application.get_env(:test_config, :bar) == 2
 
-      assert_raise Vapor.ConversionError, fn ->
-        TestConfig.get!("string", as: :int)
+    ConfigWithInit.stop()
+
+    assert Application.delete_env(:test_config, :foo)
+    assert Application.delete_env(:test_config, :bar)
+  end
+
+  test "overrides always take precedence", %{config: config} do
+    System.put_env("APP_FOO", "foo")
+    System.put_env("APP_BAR", "bar")
+
+    TestConfig.start_link(config)
+
+    assert TestConfig.get(:foo) == "foo"
+    assert TestConfig.get(:bar) == "bar"
+
+    TestConfig.set(:foo, "new foo")
+    TestConfig.set(:other, "new value")
+
+    assert TestConfig.get(:foo) == "new foo"
+    assert TestConfig.get(:other) == "new value"
+  end
+
+  test "providers can be watched" do
+    defmodule ConfigWithChange do
+      use Vapor
+
+      def start_link(config) do
+        Vapor.start_link(__MODULE__, config, name: __MODULE__)
       end
 
-      assert_raise Vapor.ConversionError, fn ->
-        TestConfig.get!("string", as: :float)
+      def handle_change(new_config) do
+        Application.put_env(:test_config, :foo, new_config[:foo])
+        :ok
       end
 
-      assert_raise Vapor.ConversionError, fn ->
-        TestConfig.get!("string", as: :bool)
+      def stop do
+        Vapor.stop(__MODULE__)
       end
-
-      TestConfig.stop()
     end
 
-    test "allows custom conversions" do
-      TestConfig.start_link()
+    System.put_env("APP_FOO", "foo")
+    System.put_env("APP_BAR", "bar")
 
-      TestConfig.set("string", "string")
+    providers = [
+      %Env{
+        bindings: [
+          foo: "APP_FOO",
+          bar: "APP_BAR",
+        ]
+      },
+      {%Provider.File{path: "test.json", bindings: [foo: "foo"]}, [watch: true, refresh_interval: 100]},
+    ]
 
-      assert TestConfig.get!("string", as: fn "string" -> {:ok, "bar"} end) == "bar"
+    translations = [
+      foo: fn s -> String.upcase(s) end
+    ]
 
-      assert TestConfig.get(
-               "string",
-               as: fn "string" ->
-                 {:error, nil}
-               end
-             ) == {:error, Vapor.ConversionError}
+    config = %{providers: providers, translations: translations}
 
-      assert_raise Vapor.ConversionError, fn ->
-        TestConfig.get!("string", as: fn "string" -> {:error, nil} end)
-      end
+    File.write!("test.json", Jason.encode!(%{foo: "foo"}))
 
-      TestConfig.stop()
-    end
+    ConfigWithChange.start_link(config)
+    assert ConfigWithChange.get(:foo) == "FOO"
+
+    File.write!("test.json", Jason.encode!(%{foo: "new foo"}))
+
+    eventually(fn ->
+      assert ConfigWithChange.get(:foo) == "NEW FOO"
+      assert Application.get_env(:test_config, :foo) == "NEW FOO"
+    end)
+
+    ConfigWithChange.stop()
+
+    File.rm("test.json")
+    Application.delete_env(:test_config, :foo)
   end
 
   defp eventually(f, count \\ 0) do
@@ -245,3 +181,4 @@ defmodule VaporTest do
       end
   end
 end
+

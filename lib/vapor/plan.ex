@@ -1,59 +1,40 @@
 defmodule Vapor.Plan do
-  @moduledoc """
-  This module provides conveniences for creating dynamic configuration layouts
-  and overlays.
-  """
+  @moduledoc false
 
-  @default_watch_opts [
-    refresh_interval: 30_000,
-  ]
+  alias Vapor.Provider
 
-  @doc """
-  Creates an initial configuration.
-  """
-  def default do
-    %{}
+  def new(providers) do
+    providers
+    |> Enum.map(fn provider -> if match?({_, _}, provider), do: provider, else: {provider, []} end)
+    |> Enum.with_index()
+    |> Enum.map(fn {provider, i} -> {i, provider} end)
+    |> Enum.into(%{})
   end
 
-  @doc """
-  Merges an existing configuration plan with a new configuration plan.
-  Plans are stacked and applied in the order that they are merged.
-  """
-  def merge(plan, provider) do
-    plan
-    |> Map.put(next_layer(plan), %{watch: false, provider: provider})
-  end
-
-  @doc """
-  Adds a provider to the configuration plan. This provider will initially be
-  loaded in the order that its specified. After the initial load the provider
-  be watched for updates.
-  """
-  def watch(plan, provider, opts \\ []) do
-    watch_opts =
-      @default_watch_opts
-      |> Keyword.merge(opts)
-
-    plan
-    |> Map.put(next_layer(plan), %{watch: true, provider: provider, opts: watch_opts})
-  end
-
-  @doc """
-  Returns a list of providers that are being watched.
-  """
   def watches(plan) do
     plan
-    |> Enum.filter(fn {_, p} -> p.watch end)
+    |> Enum.filter(fn {_i, {_p, opts}} -> Keyword.get(opts, :watch) end)
   end
 
-  defp next_layer(plan) do
-    if Enum.empty?(Map.keys(plan)) do
-      0
-    else
+  def load(plan) do
+    results =
       plan
-      |> Map.keys
-      |> Enum.max()
-      |> Kernel.+(1)
+      |> Enum.map(fn {i, {provider, _ops}} -> {i, Provider.load(provider)} end)
+
+    errors =
+      results
+      |> Enum.map(fn {_i, result} -> result end)
+      |> Enum.filter(fn {result, _} -> result == :error end)
+
+    if Enum.any?(errors) do
+      {:error, errors}
+    else
+      layers =
+        results
+        |> Enum.map(fn {i, {:ok, v}} -> {i, v} end)
+        |> Enum.into(%{})
+
+      {:ok, layers}
     end
   end
 end
