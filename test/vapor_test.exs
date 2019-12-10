@@ -115,6 +115,23 @@ defmodule VaporTest do
   end
 
   test "providers can be watched" do
+    defmodule ConfigWithChange do
+      use Vapor
+
+      def start_link(config) do
+        Vapor.start_link(__MODULE__, config, name: __MODULE__)
+      end
+
+      def handle_change(new_config) do
+        Application.put_env(:test_config, :foo, new_config[:foo])
+        :ok
+      end
+
+      def stop do
+        Vapor.stop(__MODULE__)
+      end
+    end
+
     System.put_env("APP_FOO", "foo")
     System.put_env("APP_BAR", "bar")
 
@@ -136,18 +153,20 @@ defmodule VaporTest do
 
     File.write!("test.json", Jason.encode!(%{foo: "foo"}))
 
-    TestConfig.start_link(config)
-    assert TestConfig.get(:foo) == "FOO"
+    ConfigWithChange.start_link(config)
+    assert ConfigWithChange.get(:foo) == "FOO"
 
     File.write!("test.json", Jason.encode!(%{foo: "new foo"}))
 
     eventually(fn ->
-      assert TestConfig.get(:foo) == "NEW FOO"
+      assert ConfigWithChange.get(:foo) == "NEW FOO"
+      assert Application.get_env(:test_config, :foo) == "NEW FOO"
     end)
 
-    TestConfig.stop()
+    ConfigWithChange.stop()
 
     File.rm("test.json")
+    Application.delete_env(:test_config, :foo)
   end
 
   defp eventually(f, count \\ 0) do

@@ -69,7 +69,11 @@ defmodule Vapor do
         :ok
       end
 
-      defoverridable [init: 1]
+      def handle_change(_values) do
+        :ok
+      end
+
+      defoverridable [init: 1, handle_change: 1]
     end
   end
 

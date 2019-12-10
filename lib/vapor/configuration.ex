@@ -55,7 +55,7 @@ defmodule Vapor.Configuration do
     new_paths = materialize(new_config)
     actions = diff(new_paths, old_paths)
 
-    {new_config, actions}
+    {new_config, new_paths, actions}
   end
 
   defp materialize(config) do

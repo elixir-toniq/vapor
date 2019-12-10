@@ -45,15 +45,17 @@ defmodule Vapor.Store do
   end
 
   def handle_call({:update, layer, new_values}, _, %{config: config}=state) do
-    {new_config, actions} = Configuration.update(config, layer, new_values)
+    {new_config, merged, actions} = Configuration.update(config, layer, new_values)
     process_actions(actions, state.table)
+    state.table.handle_change(merged)
 
     {:reply, :ok, %{state | config: new_config}}
   end
 
   def handle_call({:set, key, value}, _from, %{config: config}=state) do
-    {new_config, actions} = Configuration.set(config, key, value)
+    {new_config, merged, actions} = Configuration.set(config, key, value)
     process_actions(actions, state.table)
+    state.table.handle_change(merged)
 
     {:reply, {:ok, value}, %{state | config: new_config}}
   end
