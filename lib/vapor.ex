@@ -1,6 +1,6 @@
 defmodule Vapor do
   @moduledoc """
-  Vapor provides mechanisms for handling runtime configuration in your system.
+  Vapor provides mechanisms for loading runtime configuration in your system.
   """
 
   alias Vapor.Provider
