@@ -2,20 +2,7 @@ defmodule VaporTest do
   use ExUnit.Case, async: false
   doctest Vapor
 
-  alias Vapor.Provider
-  alias Vapor.Provider.Env
-
-  defmodule TestConfig do
-    use Vapor
-
-    def start_link(config) do
-      Vapor.start_link(__MODULE__, config, name: __MODULE__)
-    end
-
-    def stop do
-      Vapor.stop(__MODULE__)
-    end
-  end
+  alias Vapor.Provider.{Env, File}
 
   setup do
     providers = [
@@ -27,158 +14,93 @@ defmodule VaporTest do
       }
     ]
 
-    config = %{providers: providers}
-
-    {:ok, config: config}
+    {:ok, providers: providers}
   end
 
-  test "can pull in the environment", %{config: config} do
-    System.put_env("APP_FOO", "foo")
-    System.put_env("APP_BAR", "bar")
+  describe "load/2" do
+    test "can pull in the environment", %{providers: providers} do
+      System.put_env("APP_FOO", "foo")
+      System.put_env("APP_BAR", "bar")
 
-    TestConfig.start_link(config)
+      {:ok, config} = Vapor.load(providers)
 
-    assert TestConfig.get(:foo) == "foo"
-    assert TestConfig.get(:bar) == "bar"
-
-    TestConfig.stop()
-  end
-
-  test "can provide translations", %{config: config} do
-    System.put_env("APP_FOO", "foo")
-    System.put_env("APP_BAR", "bar")
-    translations = [
-      foo: fn "foo" -> 1 end,
-      bar: fn "bar" -> 2 end,
-    ]
-
-    TestConfig.start_link(Map.put(config, :translations, translations))
-
-    assert TestConfig.get(:foo) == 1
-    assert TestConfig.get(:bar) == 2
-
-    TestConfig.stop()
-  end
-
-  test "calls init with the configuration map", %{config: config} do
-    defmodule ConfigWithInit do
-      use Vapor
-
-      def start_link(config) do
-        Vapor.start_link(__MODULE__, config, name: __MODULE__)
-      end
-
-      def init(values) do
-        Application.put_env(:test_config, :foo, values[:foo])
-        Application.put_env(:test_config, :bar, values[:bar])
-
-        :ok
-      end
-
-      def stop do
-        Vapor.stop(__MODULE__)
-      end
+      assert config.foo == "foo"
+      assert config.bar == "bar"
     end
 
-    System.put_env("APP_FOO", "foo")
-    System.put_env("APP_BAR", "bar")
-    translations = [
-      foo: fn "foo" -> 1 end,
-      bar: fn "bar" -> 2 end,
-    ]
+    test "can provide translations", %{providers: providers} do
+      System.put_env("APP_FOO", "foo")
+      System.put_env("APP_BAR", "bar")
+      translations = [
+        foo: fn "foo" -> 1 end,
+        bar: fn "bar" -> 2 end,
+      ]
 
-    ConfigWithInit.start_link(Map.put(config, :translations, translations))
+      {:ok, config} = Vapor.load(providers, translations)
 
-    assert Application.get_env(:test_config, :foo) == 1
-    assert Application.get_env(:test_config, :bar) == 2
-
-    ConfigWithInit.stop()
-
-    assert Application.delete_env(:test_config, :foo)
-    assert Application.delete_env(:test_config, :bar)
-  end
-
-  test "overrides always take precedence", %{config: config} do
-    System.put_env("APP_FOO", "foo")
-    System.put_env("APP_BAR", "bar")
-
-    TestConfig.start_link(config)
-
-    assert TestConfig.get(:foo) == "foo"
-    assert TestConfig.get(:bar) == "bar"
-
-    TestConfig.set(:foo, "new foo")
-    TestConfig.set(:other, "new value")
-
-    assert TestConfig.get(:foo) == "new foo"
-    assert TestConfig.get(:other) == "new value"
-  end
-
-  test "providers can be watched" do
-    defmodule ConfigWithChange do
-      use Vapor
-
-      def start_link(config) do
-        Vapor.start_link(__MODULE__, config, name: __MODULE__)
-      end
-
-      def handle_change(new_config) do
-        Application.put_env(:test_config, :foo, new_config[:foo])
-        :ok
-      end
-
-      def stop do
-        Vapor.stop(__MODULE__)
-      end
+      assert config.foo == 1
+      assert config.bar == 2
     end
 
-    System.put_env("APP_FOO", "foo")
-    System.put_env("APP_BAR", "bar")
+    test "configuration is layered" do
+      System.put_env("APP_FOO", "foo")
+      System.put_env("APP_BAR", "bar")
 
-    providers = [
-      %Env{
-        bindings: [
-          foo: "APP_FOO",
-          bar: "APP_BAR",
-        ]
-      },
-      {%Provider.File{path: "test.json", bindings: [foo: "foo"]}, [watch: true, refresh_interval: 100]},
-    ]
+      providers = [
+        %Env{
+          bindings: [
+            foo: "APP_FOO",
+            bar: "APP_BAR",
+          ]
+        },
+        %File{
+          path: "test/support/settings.json",
+          bindings: [
+            foo: "foo",
+            baz: "baz",
+          ]
+        }
+      ]
 
-    translations = [
-      foo: fn s -> String.upcase(s) end
-    ]
+      translations = [
+        foo: fn "file foo" -> :success end,
+      ]
 
-    config = %{providers: providers, translations: translations}
+      {:ok, config} = Vapor.load(providers, translations)
 
-    File.write!("test.json", Jason.encode!(%{foo: "foo"}))
+      assert config.foo == :success
+      assert config.bar == "bar"
+      assert config.baz == "file baz"
+    end
 
-    ConfigWithChange.start_link(config)
-    assert ConfigWithChange.get(:foo) == "FOO"
+    test "returns error if config is missing at the end", %{providers: providers} do
+      System.put_env("APP_FOO", "foo")
+      System.delete_env("APP_BAR")
 
-    File.write!("test.json", Jason.encode!(%{foo: "new foo"}))
-
-    eventually(fn ->
-      assert ConfigWithChange.get(:foo) == "NEW FOO"
-      assert Application.get_env(:test_config, :foo) == "NEW FOO"
-    end)
-
-    ConfigWithChange.stop()
-
-    File.rm("test.json")
-    Application.delete_env(:test_config, :foo)
+      assert {:error, error} = Vapor.load(providers)
+      assert match?(%Vapor.LoadError{}, error)
+    end
   end
 
-  defp eventually(f, count \\ 0) do
-    f.()
-  rescue
-    e ->
-      if count > 5 do
-        reraise e, __STACKTRACE__
-      else
-        :timer.sleep(100)
-        eventually(f, count + 1)
+  describe "load!/2" do
+    test "returns configuration", %{providers: providers} do
+      System.put_env("APP_FOO", "foo")
+      System.put_env("APP_BAR", "bar")
+
+      config = Vapor.load!(providers)
+
+      assert config.foo == "foo"
+      assert config.bar == "bar"
+    end
+
+    test "raises errors", %{providers: providers} do
+      System.put_env("APP_FOO", "foo")
+      System.delete_env("APP_BAR")
+
+      assert_raise Vapor.LoadError, fn ->
+        Vapor.load!(providers)
       end
+    end
   end
 end
 

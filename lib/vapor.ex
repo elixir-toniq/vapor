@@ -3,112 +3,57 @@ defmodule Vapor do
   Vapor provides mechanisms for handling runtime configuration in your system.
   """
 
-  alias Vapor.{
-    Store,
-    Watch
-  }
-
-  @type key :: String.t() | list()
-  @type type :: :string | :int | :float | :bool
-  @type value :: String.t() | integer | float | boolean
+  alias Vapor.Provider
+  alias Vapor.LoadError
 
   @doc """
-  Fetches a value from the config under the key provided.
-
-  ## Example
-      VaporExample.Config.get(:key)
+  Loads a configuration plan.
   """
-  @callback get(key :: key) :: term() | nil
+  def load(providers, translations \\ [])
+  def load(providers, translations) do
+    results =
+      providers
+      |> Enum.map(& Provider.load(&1))
 
-  @doc """
-  Set the value under the key in the store.
+    errors =
+      results
+      |> Enum.filter(& match?({:error, _}, &1))
+      |> Enum.map(fn {:error, error} -> error end)
 
-  ## Example
-      VaporExample.Config.set(:key, "value")
-  """
-  @callback set(key :: key, value :: value) :: {:ok, value}
-
-  @doc """
-  Optional callback. Called when the configuration server starts. Passes the map
-  of the reified values.
-  """
-  @callback init([{key, value}]) :: :ok
-
-  defmacro __using__(_opts) do
-    quote do
-      @behaviour Vapor
-
-      def child_spec(opts) do
-        %{
-          id: __MODULE__,
-          start: {__MODULE__, :start_link, [opts]},
-          type: :supervisor,
-          restart: :permanent,
-          shutdown: 500
-        }
-      end
-
-      def set(key, value) do
-        GenServer.call(__MODULE__, {:set, key, value})
-      end
-
-      def get(key) do
-        case :ets.lookup(__MODULE__, key) do
-          [] ->
-            nil
-
-          [{^key, value}] ->
-            value
-        end
-      end
-
-      def init(_values) do
-        :ok
-      end
-
-      def handle_change(_values) do
-        :ok
-      end
-
-      defoverridable [init: 1, handle_change: 1]
-    end
-  end
-
-  @doc """
-  Starts a configuration store and any watches.
-  """
-  def start_link(module, config, opts) do
-    if opts[:name] do
-      name = Keyword.fetch!(opts, :name)
-      Supervisor.start_link(__MODULE__, {module, config}, name: :"#{name}_sup")
+    if Enum.any?(errors) do
+      error = LoadError.exception(errors)
+      {:error, error}
     else
-      raise Vapor.ConfigurationError, "must supply a `:name` argument"
+      config =
+        results
+        |> Enum.map(fn {:ok, v} -> v end)
+        |> Enum.reduce(%{}, fn layer, config -> Map.merge(config, layer) end)
+        |> Enum.map(&apply_translation(&1, translations))
+        |> Enum.into(%{})
+
+      {:ok, config}
     end
   end
 
   @doc """
-  Stops the configuration store and any watches.
+  Loads a configuration plan or raises
   """
-  def stop(name) do
-    Supervisor.stop(:"#{name}_sup")
+  def load!(providers, translations \\ [])
+  def load!(providers, translations) do
+    case load(providers, translations) do
+      {:ok, config} ->
+        config
+
+      {:error, error} ->
+        raise error
+    end
   end
 
-  @doc false
-  def init({module, config}) do
-    table_opts = [
-      :set,
-      :public,
-      :named_table,
-      read_concurrency: true,
-    ]
-
-    ^module = :ets.new(module, table_opts)
-
-    children = [
-      {Watch.Supervisor, [name: Watch.Supervisor.sup_name(module)]},
-      {Store, {module, config}}
-    ]
-
-    Supervisor.init(children, strategy: :one_for_one)
+  defp apply_translation({key, value}, translations) do
+    case Enum.find(translations, fn {k, _f} -> key == k end) do
+      {_, f} -> {key, f.(value)}
+      _ -> {key, value}
+    end
   end
 end
+
