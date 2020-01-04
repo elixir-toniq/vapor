@@ -28,20 +28,13 @@ end
 ## Example
 
 ```elixir
-defmodule VaporExample.Config do
-  alias Vapor.Provider
-  alias Vapor.Provider.{File, Env}
-
-  def load_config do
-  end
-end
-
 defmodule VaporExample.Application do
   use Application
+  alias Vapor.Provider.{File, Env}
 
   def start(_type, _args) do
     providers = [
-      %Env{bindings: [db_name: "DB_NAME", port: "PORT"]},
+      %Env{bindings: [db_url: "DB_URL", db_name: "DB_NAME", port: "PORT"]},
       %File{path: "config.toml", bindings: [kafka_brokers: "kafka.brokers"]},
     ]
 
@@ -51,7 +44,7 @@ defmodule VaporExample.Application do
 
     children = [
        {VaporExampleWeb.Endpoint, port: config.port}
-       {VaporExample.Repo, db_name: config.db_name},
+       {VaporExample.Repo, [db_url: config.db_url, db_name: config.db_name]},
        {VaporExample.Kafka, brokers: config.kafka_brokers},
     ]
 
@@ -152,15 +145,12 @@ end
 
 ## Why does this exist?
 
-Vapor is intended to be used for the configuration of other runtime dependencies
-such as setting the port for `Phoenix.Endpoint` or setting the database url for `Ecto.Repo`.
-Vapor is *not* intended for configuration of kernel modules such as `:ssh`. Mix releases
-provide a release configuration. But configuring an app in this way still has
-problems:
+While its possible to use Elixir's release configuration for some use cases,
+release configuration has some issues:
 
-* If configuration ends up in Mix config then its still functioning as a global and is shared across all of your running applications.
+* If configuration ends up in Application config then its still functioning as a global and is shared across all of your running applications.
 * Limited ability to recover from failures while fetching config from external providers.
 * Its difficult to layer configuration from different sources.
 
-Vapor is specifically designed to target these use cases.
+Vapor is designed to solve these problems.
 
