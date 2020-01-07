@@ -14,15 +14,22 @@ defmodule Vapor.Provider.Dotenv do
   this provider is local development where it might be inconvenient to add all
   of the necessary environment variables on your local machine and it makes
   tradeoffs for that use case.
+
+  ## Existing environment variables
+
+  By default the dotenv provider won't overwrite any existing environment variables.
+  You can change this by setting the `overwrite` key to `true`:
+
+      %Dotenv{overwrite: true}
   """
-  defstruct filename: ".env"
+  defstruct filename: ".env", overwrite: false
 
   defimpl Vapor.Provider do
-    def load(%{filename: filename}) do
+    def load(%{filename: filename, overwrite: overwrite}) do
       case File.read(filename) do
         {:ok, contents} ->
           for {k, v} <- parse(contents) do
-            if System.get_env(k) == nil do
+            if overwrite || System.get_env(k) == nil do
               System.put_env(k, v)
             end
           end
