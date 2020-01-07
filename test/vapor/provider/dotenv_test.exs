@@ -68,6 +68,38 @@ defmodule Vapor.Provider.DotenvTest do
       assert System.get_env("BAR") == nil
       assert System.get_env("BAZ") == nil
     end
+
+    test "does not overwrite existing env variables by default" do
+      contents = """
+      # This is a comment
+      FOO=foo
+      BAR=bar
+      """
+      File.write(".env", contents)
+      System.put_env("FOO", "existing")
+
+      plan = %Dotenv{}
+      Vapor.Provider.load(plan)
+      assert System.get_env("FOO") == "existing"
+      assert System.get_env("BAR") == "bar"
+      assert System.get_env("BAZ") == nil
+    end
+
+    test "overwrites existing variables if specified" do
+      contents = """
+      # This is a comment
+      FOO=foo
+      BAR=bar
+      """
+      File.write(".env", contents)
+      System.put_env("FOO", "existing")
+
+      plan = %Dotenv{overwrite: true}
+      Vapor.Provider.load(plan)
+      assert System.get_env("FOO") == "foo"
+      assert System.get_env("BAR") == "bar"
+      assert System.get_env("BAZ") == nil
+    end
   end
 
   describe "with_file/1" do
