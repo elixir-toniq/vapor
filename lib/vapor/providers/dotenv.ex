@@ -22,7 +22,9 @@ defmodule Vapor.Provider.Dotenv do
       case File.read(filename) do
         {:ok, contents} ->
           for {k, v} <- parse(contents) do
-            System.put_env(k, v)
+            if System.get_env(k) == nil do
+              System.put_env(k, v)
+            end
           end
           {:ok, %{}}
 
