@@ -21,22 +21,60 @@ defmodule Vapor.Provider.Dotenv do
   You can change this by setting the `overwrite` key to `true`:
 
       %Dotenv{overwrite: true}
+
+  ## File heirarchy
+
+  If no file is specified then the dotenv provider will load these files in this
+  order. Each proceeding file is loaded over the previous. In these examples `ENV`
+  will be the current mix environment: `dev`, `test`, or `prod`.
+
+  * `.env`
+  * `.env.ENV`
+  * `.env.local`
+  * `.env.ENV.local`
+
+  You should commit `.env` and `.env.ENV` files to your project and ignore any
+  `.local` files. This allows users to provide a custom setup if they need to
+  do that.
   """
-  defstruct filename: ".env", overwrite: false
+  defstruct filename: nil, overwrite: false
 
   defimpl Vapor.Provider do
+    @mix_env Mix.env()
+
+    def load(%{filename: nil, overwrite: overwrite}) do
+      files = [".env", ".env.#{@mix_env}", ".env.local", ".env.#{@mix_env}.local"]
+
+      files
+      |> Enum.reduce(%{}, fn file, acc -> Map.merge(acc, load_file(file)) end)
+      |> put_vars(overwrite)
+
+      {:ok, %{}}
+    end
+
     def load(%{filename: filename, overwrite: overwrite}) do
-      case File.read(filename) do
+      filename
+      |> load_file
+      |> put_vars(overwrite)
+
+      {:ok, %{}}
+    end
+
+    defp load_file(file) do
+      case File.read(file) do
         {:ok, contents} ->
-          for {k, v} <- parse(contents) do
-            if overwrite || System.get_env(k) == nil do
-              System.put_env(k, v)
-            end
-          end
-          {:ok, %{}}
+          parse(contents)
 
         _ ->
-          {:ok, %{}}
+          %{}
+      end
+    end
+
+    def put_vars(vars, overwrite) do
+      for {k, v} <- vars do
+        if overwrite || System.get_env(k) == nil do
+          System.put_env(k, v)
+        end
       end
     end
 
@@ -48,6 +86,7 @@ defmodule Vapor.Provider.Dotenv do
       |> Enum.filter(&good_pair/1)
       |> Enum.map(fn [key, value] -> {String.trim(key), String.trim(value)} end)
       |> Enum.map(fn {key, value} -> {key, value} end)
+      |> Enum.into(%{})
     end
 
     defp comment?(line) do
