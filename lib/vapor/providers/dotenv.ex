@@ -40,10 +40,11 @@ defmodule Vapor.Provider.Dotenv do
   defstruct filename: nil, overwrite: false
 
   defimpl Vapor.Provider do
-    @mix_env Mix.env()
-
     def load(%{filename: nil, overwrite: overwrite}) do
-      files = [".env", ".env.#{@mix_env}", ".env.local", ".env.#{@mix_env}.local"]
+      # Get the environment from mix. If mix isn't available we assume we're in
+      # a prod release
+      env = if Code.ensure_loaded?(Mix), do: Mix.env(), else: "prod"
+      files = [".env", ".env.#{env}", ".env.local", ".env.#{env}.local"]
 
       files
       |> Enum.reduce(%{}, fn file, acc -> Map.merge(acc, load_file(file)) end)
