@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.0 (January 14, 2019)
+## 0.5.0 (January 14, 2020)
 
 * [1fa5997](https://github.com/keathley/vapor/commit/1fa59975c142efd12cc1673d03c64cfbc302f49f) Support other env based files - Chris Keathley
 * [67c3d22](https://github.com/keathley/vapor/commit/67c3d22a66dd122d7f3c8cc6eeb0e58898d98048) Merge branch 'support-other-dotenv-files' - Chris Keathley
@@ -9,14 +9,14 @@
 * [e1fc0d5](https://github.com/keathley/vapor/commit/e1fc0d512fd781bf1fa16d55ca48fe7f2bfe03c0) Remove circle support - Chris Keathley
 * [72afccf](https://github.com/keathley/vapor/commit/72afccffee405db8d2a9d2708f677080117721ed) Merge branch 'update-credo-file' - Chris Keathley
 
-## 0.4.1 (January 7, 2019)
+## 0.4.1 (January 7, 2020)
 
 * [ed59837](https://github.com/keathley/vapor/commit/ed59837f19ba7117b7b325722dc09d0ed919074e) Improve README - Chris Keathley
 * [c918494](https://github.com/keathley/vapor/commit/c91849491d72bf41f4bb62b23460d0b27c28f9c6) Don't overwrite env with dotenv provider - Chris Keathley
 * [ec55d8c](https://github.com/keathley/vapor/commit/ec55d8c9610e2eafa55277d2f330828cdeba45ca) Allow optional overwriting in dotenv provider - Chris Keathley
 * [75fbce4](https://github.com/keathley/vapor/commit/75fbce4cc53eccae6027dfd5e9e2a5570b6108c2) Merge branch 'dont-overwrite-environment-with-dotenv' - Chris Keathley
 
-## 0.4 (January 3, 2019)
+## 0.4 (January 3, 2020)
 
 * [6a0ec97](https://github.com/keathley/vapor/commit/6a0ec9796b75859b93def7fae65efa753633f2b6) Make Vapor just about loading configuration.
 
