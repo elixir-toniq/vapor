@@ -1,7 +1,7 @@
 defmodule Vapor.Mixfile do
   use Mix.Project
 
-  @version "0.5.0"
+  @version "0.5.1"
 
   def project do
     [
@@ -51,7 +51,7 @@ defmodule Vapor.Mixfile do
     [
       name: "vapor",
       maintainers: ["Chris Keathley", "Jeff Weiss", "Ben Marx"],
-      licenses: ["Apache 2.0"],
+      licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/keathley/vapor"}
     ]
   end

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1 (January 14, 2020)
+
+* [5dfbf53](https://github.com/keathley/vapor/commit/5dfbf53e2825e3401d7239aa6e6dacf1511577a6) Pull environment from mix if mix is available - Chris Keathley
+* [ebe0cb4](https://github.com/keathley/vapor/commit/ebe0cb417fa586cdd04b0690272606d87ce52b4d) Merge branch 'fix-env-loading' - Chris Keathley
+
 ## 0.5.0 (January 14, 2020)
 
 * [1fa5997](https://github.com/keathley/vapor/commit/1fa59975c142efd12cc1673d03c64cfbc302f49f) Support other env based files - Chris Keathley
