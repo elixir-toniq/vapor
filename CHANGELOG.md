@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 (January 14, 2019)
+
+* [1fa5997](https://github.com/keathley/vapor/commit/1fa59975c142efd12cc1673d03c64cfbc302f49f) Support other env based files - Chris Keathley
+* [67c3d22](https://github.com/keathley/vapor/commit/67c3d22a66dd122d7f3c8cc6eeb0e58898d98048) Merge branch 'support-other-dotenv-files' - Chris Keathley
+* [b6b6e18](https://github.com/keathley/vapor/commit/b6b6e1841e9a9be999b260bc82d9c1e2e0d0e0a1) Create elixir.yml - Chris Keathley
+* [3d7fa8d](https://github.com/keathley/vapor/commit/3d7fa8d6ac5623f970fc7d11cc7d117fadf0fe2c) Update credo file; update libraries - Chris Keathley
+* [e1fc0d5](https://github.com/keathley/vapor/commit/e1fc0d512fd781bf1fa16d55ca48fe7f2bfe03c0) Remove circle support - Chris Keathley
+* [72afccf](https://github.com/keathley/vapor/commit/72afccffee405db8d2a9d2708f677080117721ed) Merge branch 'update-credo-file' - Chris Keathley
+
 ## 0.4.1 (January 7, 2019)
 
 * [ed59837](https://github.com/keathley/vapor/commit/ed59837f19ba7117b7b325722dc09d0ed919074e) Improve README - Chris Keathley

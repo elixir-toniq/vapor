@@ -1,11 +1,13 @@
 defmodule Vapor.Mixfile do
   use Mix.Project
 
+  @version "0.5.0"
+
   def project do
     [
       app: :vapor,
-      version: "0.4.1",
-      elixir: "~> 1.5",
+      version: @version,
+      elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
@@ -48,7 +50,6 @@ defmodule Vapor.Mixfile do
   defp package do
     [
       name: "vapor",
-      files: ["lib", "mix.exs", "README*", "LICENSE"],
       maintainers: ["Chris Keathley", "Jeff Weiss", "Ben Marx"],
       licenses: ["Apache 2.0"],
       links: %{"GitHub" => "https://github.com/keathley/vapor"}
@@ -58,6 +59,8 @@ defmodule Vapor.Mixfile do
   def docs do
     [
       main: "Vapor",
+      source_ref: "v#{@version}",
+      source_url: "https://github.com/keathley/vapor",
     ]
   end
 end
