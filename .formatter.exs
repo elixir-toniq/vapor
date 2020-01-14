@@ -1,4 +1,4 @@
 [
-  inputs: ["mix.exs", "{config,lib,test}/**/*.{ex,exs}"],
+  inputs: [],
   line_length: 120
 ]

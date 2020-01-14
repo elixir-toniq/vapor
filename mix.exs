@@ -13,10 +13,6 @@ defmodule Vapor.Mixfile do
       name: "Vapor",
       source_url: "https://github.com/keathley/vapor",
       preferred_cli_env: [coveralls: :test, "coveralls.detail": :test, "coveralls.html": :test],
-      dialyzer: [
-        ignore_warnings: "dialyzer.ignore-warnings",
-        plt_file: {:no_warn, "priv/plts/vapor.plt"}
-      ],
       test_coverage: [tool: ExCoveralls],
       docs: docs(),
     ]
@@ -41,7 +37,6 @@ defmodule Vapor.Mixfile do
       # dev and test dependencies
       {:credo, "~> 1.0", only: [:dev]},
       {:excoveralls, "~> 0.10.3", only: [:dev, :test]},
-      {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.19", only: :dev}
     ]
   end
