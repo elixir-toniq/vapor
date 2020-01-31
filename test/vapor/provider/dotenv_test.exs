@@ -44,7 +44,7 @@ defmodule Vapor.Provider.DotenvTest do
 
   test "ignores any malformed data" do
     contents = """
-    FOO=foo
+    FOO=foo=
     BAR
     =this is a baz
     """
@@ -52,7 +52,7 @@ defmodule Vapor.Provider.DotenvTest do
 
     plan = %Dotenv{}
     Vapor.Provider.load(plan)
-    assert System.get_env("FOO") == "foo"
+    assert System.get_env("FOO") == "foo="
     assert System.get_env("BAR") == nil
     assert System.get_env("BAZ") == nil
   end

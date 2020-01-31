@@ -83,7 +83,7 @@ defmodule Vapor.Provider.Dotenv do
       contents
       |> String.split(~r/\n/, trim: true)
       |> Enum.reject(&comment?/1)
-      |> Enum.map(fn pair -> String.split(pair, "=") end)
+      |> Enum.map(fn pair -> String.split(pair, "=", parts: 2) end)
       |> Enum.filter(&good_pair/1)
       |> Enum.map(fn [key, value] -> {String.trim(key), String.trim(value)} end)
       |> Enum.map(fn {key, value} -> {key, value} end)
