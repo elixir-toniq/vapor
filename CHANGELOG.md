@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.2 (January 31, 2020)
+
+* [2a4d694](https://github.com/keathley/vapor/commit/2a4d6944d1bbe4302ba38db15d4ca087e8268e32) Fix splitting env vars when value contains "=" - Tim Cooper
+* [0f00b17](https://github.com/keathley/vapor/commit/0f00b176d1a365b2c61238f4705b1c1d4cce5a3c) Merge branch 'coop-master' - Chris Keathley
+
 ## 0.5.1 (January 14, 2020)
 
 * [5dfbf53](https://github.com/keathley/vapor/commit/5dfbf53e2825e3401d7239aa6e6dacf1511577a6) Pull environment from mix if mix is available - Chris Keathley
