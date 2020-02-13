@@ -32,4 +32,17 @@ defmodule Vapor.Provider.EnvTest do
     assert {:error, error} = Provider.load(provider)
     assert error == "ENV vars not set: BAR, FOO"
   end
+
+  test "can mark env provider as not required" do
+    System.put_env("FOO", "FOO VALUE")
+
+    provider = %Env{
+      bindings: [
+        foo: "FOO",
+        bar: "BAR",
+      ],
+      required: false
+    }
+    assert {:ok, %{foo: "FOO VALUE"}} == Provider.load(provider)
+  end
 end
