@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6 (February 13, 2020)
+
+* Bump dependencies
+* Allow file and env providers to be marked as required or not required
+
 ## 0.5.2 (January 31, 2020)
 
 * [2a4d694](https://github.com/keathley/vapor/commit/2a4d6944d1bbe4302ba38db15d4ca087e8268e32) Fix splitting env vars when value contains "=" - Tim Cooper
