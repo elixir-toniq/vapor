@@ -8,12 +8,12 @@ defmodule Vapor.Provider.Env do
       %Env{bindings: [foo: "FOO", bar: "VAR_BAR"]}
   """
 
-  defstruct bindings: []
+  defstruct bindings: [], required: true
 
   @type bindings :: Keyword.t(String.t())
 
   defimpl Vapor.Provider do
-    def load(%{bindings: bindings}) do
+    def load(%{bindings: bindings, required: required}) do
       envs = System.get_env()
 
       bound_envs =
@@ -25,10 +25,14 @@ defmodule Vapor.Provider.Env do
         |> Enum.filter(fn {_, env} -> env == :missing end)
         |> Enum.map(fn {k, :missing} -> Keyword.get(bindings, k) end)
 
-      if Enum.any?(missing) do
+      if required && Enum.any?(missing) do
         {:error, "ENV vars not set: #{Enum.join(missing, ", ")}"}
       else
-        {:ok, bound_envs}
+        envs =
+          bound_envs
+          |> Enum.reject(fn {_, env} -> env == :missing end)
+          |> Enum.into(%{})
+        {:ok, envs}
       end
     end
   end
