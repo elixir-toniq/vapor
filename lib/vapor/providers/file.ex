@@ -11,7 +11,7 @@ defmodule Vapor.Provider.File do
   """
   import Norm
 
-  defstruct path: nil, bindings: []
+  defstruct path: nil, bindings: [], required: true
 
   def s do
     bindings = coll_of({
@@ -25,6 +25,7 @@ defmodule Vapor.Provider.File do
     schema(%__MODULE__{
       path: spec(is_binary()),
       bindings: bindings,
+      required: spec(is_boolean)
     })
   end
 
@@ -46,10 +47,15 @@ defmodule Vapor.Provider.File do
           |> Enum.filter(fn {_, val} -> val == :missing end)
           |> Enum.map(fn {k, :missing} -> Keyword.get(provider.bindings, k) end)
 
-        if Enum.any?(missing) do
+        if provider.required && Enum.any?(missing) do
           {:error, "Missing keys in file: #{Enum.join(missing, ", ")}"}
         else
-          {:ok, bound}
+          envs =
+            bound
+            |> Enum.reject(fn {_, env} -> env == :missing end)
+            |> Enum.into(%{})
+
+          {:ok, envs}
         end
       end
     end
