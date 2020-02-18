@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7 (February 18, 2020)
+
+* Allow bindings options (map, default, required)
+* Add support for grouping providers
+
 ## 0.6 (February 13, 2020)
 
 * Bump dependencies
