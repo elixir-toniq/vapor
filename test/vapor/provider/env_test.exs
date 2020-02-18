@@ -45,4 +45,39 @@ defmodule Vapor.Provider.EnvTest do
     }
     assert {:ok, %{foo: "FOO VALUE"}} == Provider.load(provider)
   end
+
+  test "translations can be provided inline" do
+    System.put_env("FOO", "3")
+
+    provider = %Env{
+      bindings: [
+        {:foo, "FOO", map: &String.to_integer/1},
+      ]
+    }
+    assert {:ok, %{foo: 3}} == Provider.load(provider)
+  end
+
+  test "can specify default values" do
+    System.put_env("FOO", "3")
+
+    provider = %Env{
+      bindings: [
+        {:foo, "FOO", map: &String.to_integer/1},
+        {:bar, "BAR", default: 1337},
+      ]
+    }
+    assert {:ok, %{foo: 3, bar: 1337}} = Provider.load(provider)
+  end
+
+  test "can mark a value as non-required" do
+    System.put_env("FOO", "3")
+
+    provider = %Env{
+      bindings: [
+        {:foo, "FOO", map: &String.to_integer/1},
+        {:bar, "BAR", required: false},
+      ]
+    }
+    assert {:ok, %{foo: 3, bar: nil}} = Provider.load(provider)
+  end
 end

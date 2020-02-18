@@ -44,4 +44,36 @@ defmodule Vapor.Provider.FileTest do
     assert {:error, error} = Provider.load(provider)
     assert error == "Missing keys in file: bar, boz"
   end
+
+  test "translations can be provided inline" do
+    provider = %File{
+      path: "test/support/settings.json",
+      bindings: [
+        {:foo, "foo", map: fn "file foo" -> 1337 end},
+      ]
+    }
+    assert {:ok, %{foo: 1337}} == Provider.load(provider)
+  end
+
+  test "can specify default values" do
+    provider = %File{
+      path: "test/support/settings.json",
+      bindings: [
+        {:foo, "foo"},
+        {:bar, ["some", "key"], default: 1337},
+      ]
+    }
+    assert {:ok, %{foo: "file foo", bar: 1337}} = Provider.load(provider)
+  end
+
+  test "can mark a value as non-required" do
+    provider = %File{
+      path: "test/support/settings.json",
+      bindings: [
+        {:foo, "foo"},
+        {:bar, ["some", "key"], required: false},
+      ]
+    }
+    assert {:ok, %{foo: "file foo", bar: nil}} = Provider.load(provider)
+  end
 end

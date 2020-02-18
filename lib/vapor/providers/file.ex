@@ -14,17 +14,14 @@ defmodule Vapor.Provider.File do
   defstruct path: nil, bindings: [], required: true
 
   def s do
-    bindings = coll_of({
-      spec(is_atom()),
-      one_of([
-        spec(is_binary()),
-        spec(is_list()),
-      ])
-    })
+    binding = one_of([
+      {spec(is_atom()), one_of([spec(is_binary()), spec(is_list())])},
+      {spec(is_atom()), one_of([spec(is_binary()), spec(is_list())]), spec(is_list())},
+    ])
 
     schema(%__MODULE__{
       path: spec(is_binary()),
-      bindings: bindings,
+      bindings: coll_of(binding),
       required: spec(is_boolean)
     })
   end
@@ -36,23 +33,25 @@ defmodule Vapor.Provider.File do
 
       str = read!(provider.path)
 
-      with {:ok, data} <- decode(str, format) do
+      with {:ok, file} <- decode(str, format) do
         bound =
           provider.bindings
-          |> Enum.map(fn {key, path} -> {key, get(data, path) || :missing} end)
+          |> Enum.map(&normalize_binding/1)
+          |> Enum.map(&create_binding(&1, file))
           |> Enum.into(%{})
 
         missing =
           bound
-          |> Enum.filter(fn {_, val} -> val == :missing end)
-          |> Enum.map(fn {k, :missing} -> Keyword.get(provider.bindings, k) end)
+          |> Enum.filter(fn {_, data} -> data.val == :missing end)
+          |> Enum.map(fn {_, data} -> data.env end)
 
         if provider.required && Enum.any?(missing) do
           {:error, "Missing keys in file: #{Enum.join(missing, ", ")}"}
         else
           envs =
             bound
-            |> Enum.reject(fn {_, env} -> env == :missing end)
+            |> Enum.reject(fn {_, data} -> data.val == :missing end)
+            |> Enum.map(fn {name, data} -> {name, data.val} end)
             |> Enum.into(%{})
 
           {:ok, envs}
@@ -60,11 +59,38 @@ defmodule Vapor.Provider.File do
       end
     end
 
-    def get(data, path) do
+    defp normalize_binding({name, variable}) do
+      {name, %{val: nil, env: variable, opts: default_opts()}}
+    end
+    defp normalize_binding({name, variable, opts}) do
+      {name, %{val: nil, env: variable, opts: Keyword.merge(default_opts(), opts)}}
+    end
+
+    defp create_binding({name, data}, envs) do
+      case get(envs, data.env) do
+        nil ->
+          val = data.opts[:default] || (if data.opts[:required], do: :missing, else: nil)
+          {name, %{data | val: val}}
+
+        env ->
+          # Call the map function which defaults to identity
+          {name, %{data | val: data.opts[:map].(env)}}
+      end
+    end
+
+    defp default_opts do
+      [
+        map: fn x -> x end,
+        default: nil,
+        required: true,
+      ]
+    end
+
+    defp get(data, path) do
       get_in(data, List.wrap(path))
     end
 
-    def decode(str, format) do
+    defp decode(str, format) do
       case format do
         :json ->
           Jason.decode(str)
@@ -77,7 +103,7 @@ defmodule Vapor.Provider.File do
       end
     end
 
-    def read!(path) do
+    defp read!(path) do
       case File.read(path) do
         {:ok, str} ->
           str
@@ -87,7 +113,7 @@ defmodule Vapor.Provider.File do
       end
     end
 
-    def format(path) do
+    defp format(path) do
       case Path.extname(path) do
         ".json" ->
           :json
