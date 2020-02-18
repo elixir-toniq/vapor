@@ -1,5 +1,7 @@
 # Vapor
 
+<!-- MDOC !-->
+
 Loads dynamic configuration at runtime.
 
 ## Why Vapor?
@@ -12,18 +14,6 @@ providing an alternative to mix config for runtime configs. Specifically Vapor c
   * Find and load configuration from files (JSON, YAML, TOML).
   * Read configuration from environment variables.
   * `.env` file support for easy local development.
-
-## Installing
-
-Add vapor to your mix dependencies:
-
-```elixir
-def deps do
-  [
-    {:vapor, "~> 0.6"},
-  ]
-end
-```
 
 ## Example
 
@@ -100,6 +90,25 @@ config = Vapor.load(providers, translations)
 Config files can be read from a number of different file types including
 JSON, TOML, and YAML. Vapor determines which file format to use based on the file extension.
 
+### Options on bindings
+
+Bindings for `%Env{}` and `%File{}` providers support a number of options:
+
+* `:map` - Allows you to pass a "translation" function with the binding.
+* `:default` - If the value is not found then the default value will be returned instead. Defaults always skip the translations.
+* `:required` - Marks the binding a required or not required (defaults to true). If required values are missing, and there is no default present, then the provider will return an exception. If the binding is marked `required: false`, then the provider returns the key with a `nil` value.
+
+```elixir
+providers = [
+  %Env{
+    bindings: [
+      {:db_name, "DB_NAME"},
+      {:db_port, "DB_PORT", default: 4369, map: &String.to_integer/1},
+    ]
+  }
+]
+```
+
 ### Overriding application environment
 
 In some cases you may want to overwrite the keys in the application
@@ -143,6 +152,8 @@ defmodule MyApp.DatabaseProvider do
 end
 ```
 
+<!-- MDOC !-->
+
 ## Why does this exist?
 
 While its possible to use Elixir's release configuration for some use cases,
@@ -153,4 +164,17 @@ release configuration has some issues:
 * Its difficult to layer configuration from different sources.
 
 Vapor is designed to solve these problems.
+
+## Installing
+
+Add vapor to your mix dependencies:
+
+```elixir
+def deps do
+  [
+    {:vapor, "~> 0.6"},
+  ]
+end
+```
+
 

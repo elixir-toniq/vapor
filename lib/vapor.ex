@@ -1,7 +1,8 @@
 defmodule Vapor do
-  @moduledoc """
-  Vapor provides mechanisms for loading runtime configuration in your system.
-  """
+  @moduledoc "README.md"
+             |> File.read!()
+             |> String.split("<!-- MDOC !-->")
+             |> Enum.fetch!(1)
 
   alias Vapor.Provider
   alias Vapor.LoadError
