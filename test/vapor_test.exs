@@ -80,6 +80,10 @@ defmodule VaporTest do
       assert {:error, error} = Vapor.load(providers)
       assert match?(%Vapor.LoadError{}, error)
     end
+
+    test "allows a single provider" do
+      assert {:ok, _} = Vapor.load(%Env{})
+    end
   end
 
   describe "load!/2" do

@@ -4,35 +4,18 @@ defmodule Vapor do
              |> String.split("<!-- MDOC !-->")
              |> Enum.fetch!(1)
 
-  alias Vapor.Provider
-  alias Vapor.LoadError
-
   @doc """
   Loads a configuration plan.
   """
   def load(providers, translations \\ [])
   def load(providers, translations) do
-    results =
-      providers
-      |> Enum.map(& Provider.load(&1))
-
-    errors =
-      results
-      |> Enum.filter(& match?({:error, _}, &1))
-      |> Enum.map(fn {:error, error} -> error end)
-
-    if Enum.any?(errors) do
-      error = LoadError.exception(errors)
-      {:error, error}
-    else
-      config =
-        results
-        |> Enum.map(fn {:ok, v} -> v end)
-        |> Enum.reduce(%{}, fn layer, config -> Map.merge(config, layer) end)
+    with {:ok, map} <- Vapor.Loader.load(providers) do
+      transformed =
+        map
         |> Enum.map(&apply_translation(&1, translations))
         |> Enum.into(%{})
 
-      {:ok, config}
+      {:ok, transformed}
     end
   end
 
