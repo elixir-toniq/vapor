@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1 (Febuary 24, 2020)
+
+* Fix default bug if the default value was `false`.
+
 ## 0.7 (February 18, 2020)
 
 * Allow bindings options (map, default, required)
