@@ -64,9 +64,10 @@ defmodule Vapor.Provider.EnvTest do
       bindings: [
         {:foo, "FOO", map: &String.to_integer/1},
         {:bar, "BAR", default: 1337},
+        {:baz, "BAZ", default: false},
       ]
     }
-    assert {:ok, %{foo: 3, bar: 1337}} = Provider.load(provider)
+    assert {:ok, %{foo: 3, bar: 1337, baz: false}} = Provider.load(provider)
   end
 
   test "can mark a value as non-required" do
