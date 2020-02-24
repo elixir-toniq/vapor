@@ -69,7 +69,11 @@ defmodule Vapor.Provider.File do
     defp create_binding({name, data}, envs) do
       case get(envs, data.env) do
         nil ->
-          val = data.opts[:default] || (if data.opts[:required], do: :missing, else: nil)
+          val = if data.opts[:default] != nil do
+            data.opts[:default]
+          else
+            if data.opts[:required], do: :missing, else: nil
+          end
           {name, %{data | val: val}}
 
         env ->
