@@ -14,6 +14,9 @@ defmodule VaporTest do
       }
     ]
 
+    System.delete_env("APP_FOO")
+    System.delete_env("APP_BAR")
+
     {:ok, providers: providers}
   end
 
