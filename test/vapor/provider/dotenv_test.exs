@@ -16,6 +16,10 @@ defmodule Vapor.Provider.DotenvTest do
       File.rm(".env")
       File.rm(".env.test")
       File.rm(".env.dev")
+
+      System.delete_env("FOO")
+      System.delete_env("BAR")
+      System.delete_env("BAZ")
     end
 
     :ok
