@@ -5,6 +5,7 @@ defmodule Vapor.Provider.GroupTest do
 
   setup do
     System.delete_env("DB_HOST")
+    System.delete_env("DB_PORT")
 
     :ok
   end
@@ -42,5 +43,17 @@ defmodule Vapor.Provider.GroupTest do
     ]
 
     assert Vapor.load!(providers) == %{primary_db: [port: 4369]}
+  end
+
+  test "groups returns error if config is missing" do
+    provider =
+      %Group{name: :primary_db, providers: [
+        %Env{bindings: [
+          {:port, "DB_PORT", map: &String.to_integer/1},
+        ]},
+      ]}
+
+    assert {:error, error} = Vapor.load(provider)
+    assert match?(%Vapor.LoadError{}, error)
   end
 end
