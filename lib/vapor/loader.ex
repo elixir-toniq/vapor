@@ -19,8 +19,7 @@ defmodule Vapor.Loader do
       |> Enum.map(& normalize_error/1)
 
     if Enum.any?(errors) do
-      error = LoadError.exception(errors)
-      {:error, error}
+      {:error, errors}
     else
       config =
         results
@@ -30,10 +29,6 @@ defmodule Vapor.Loader do
 
       {:ok, config}
     end
-  end
-
-  defp normalize_error({:error, %_{message: message}}) do
-    message
   end
 
   defp normalize_error({:error, error}) do
