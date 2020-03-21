@@ -9,13 +9,17 @@ defmodule Vapor do
   """
   def load(providers, translations \\ [])
   def load(providers, translations) do
-    with {:ok, map} <- Vapor.Loader.load(providers) do
-      transformed =
-        map
-        |> Enum.map(&apply_translation(&1, translations))
-        |> Enum.into(%{})
+    case Vapor.Loader.load(providers) do
+      {:ok, map} ->
+        transformed =
+          map
+          |> Enum.map(&apply_translation(&1, translations))
+          |> Enum.into(%{})
 
-      {:ok, transformed}
+        {:ok, transformed}
+
+      {:error, errors} ->
+        {:error, Vapor.LoadError.exception(errors)}
     end
   end
 
