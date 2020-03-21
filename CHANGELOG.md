@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.2 (March 21, 2020)
+
+* Update dependencies
+* Fix the error messages when group providers fail
+
 ## 0.7.1 (Febuary 24, 2020)
 
 * Fix default bug if the default value was `false`.
