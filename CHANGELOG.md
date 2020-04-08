@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.0 (April 8, 2020)
+
+* Add heredoc support to dotenv - Devon Estes
+
 ## 0.7.2 (March 21, 2020)
 
 * Update dependencies
