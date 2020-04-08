@@ -143,5 +143,29 @@ defmodule Vapor.Provider.DotenvTest do
     assert System.get_env("BAR") == "bar"
     assert System.get_env("BAZ") == "this is a baz"
   end
+
+  test "reads variables from bash style heredocs" do
+    contents = """
+    FOO=<< 'EOF'
+      I am a quoted
+      multiline variable
+      inside a heredoc
+    EOF
+    BAR=bar
+    BAZ=   << EOF
+      I am an unquoted
+      multiline variable
+      inside a heredoc
+        # with something that could be a comment
+    EOF
+    """
+    File.write(".env", contents)
+
+    plan = %Dotenv{}
+    Vapor.Provider.load(plan)
+    assert System.get_env("FOO") == "  I am a quoted\n  multiline variable\n  inside a heredoc"
+    assert System.get_env("BAR") == "bar"
+    assert System.get_env("BAZ") == "  I am an unquoted\n  multiline variable\n  inside a heredoc\n    # with something that could be a comment"
+  end
 end
 

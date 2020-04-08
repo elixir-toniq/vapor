@@ -9,6 +9,19 @@ defmodule Vapor.Provider.Dotenv do
   REDIS_HOST=1234
   ```
 
+  Multiline variables can be written using bash-style heredocs like so:
+  ```
+  API_PRIVATE_KEY=<< EOF
+  -----BEGIN RSA PRIVATE KEY-----
+  MIIEogIBAAKCAQEArq74P2ButEMolub0tHfxdWSLcaGi7Da7IJX7jOZFdcSjvXjt
+  ...
+  4A5j0wlIuJqz+OZmV+WSOlJdFXQugTaMd6hMLG8SE6AvEM+L91E=
+  -----END RSA PRIVATE KEY-----
+  EOF
+  PORT=4000
+  REDIS_HOST=1234
+  ```
+
   If the file can't be found then this provider will still return an ok but
   will (obviously) not load any configuration values. The primary use case for
   this provider is local development where it might be inconvenient to add all
@@ -82,26 +95,57 @@ defmodule Vapor.Provider.Dotenv do
     defp parse(contents) do
       contents
       |> String.split(~r/\n/, trim: true)
-      |> Enum.reject(&comment?/1)
-      |> Enum.map(fn pair -> String.split(pair, "=", parts: 2) end)
-      |> Enum.filter(&good_pair/1)
-      |> Enum.map(fn [key, value] -> {String.trim(key), String.trim(value)} end)
-      |> Enum.map(fn {key, value} -> {key, value} end)
+      |> Enum.reduce([], &parse/2)
       |> Enum.into(%{})
+    end
+
+    defp parse(line, {key, delimiter, heredoc_acc, acc}) do
+      if String.trim(line) == delimiter do
+        value =
+          heredoc_acc
+          |> Enum.reverse()
+          |> Enum.join("\n")
+
+        [{key, value} | acc]
+      else
+        {key, delimiter, [line | heredoc_acc], acc}
+      end
+    end
+
+    defp parse(line, acc) do
+      if comment?(line) do
+        acc
+      else
+        line
+        |> String.split("=", parts: 2)
+        |> parse_pair(acc)
+      end
+    end
+
+    defp parse_pair([key, value], acc) do
+      if String.length(key) > 0 && String.length(value) > 0 do
+        key = String.trim(key)
+        value = String.trim(value)
+
+        case starting_heredoc(value) do
+          [_, delimiter] -> {key, delimiter, [], acc}
+          _ -> [{key, value} | acc]
+        end
+      else
+        acc
+      end
+    end
+
+    defp parse_pair(_, acc) do
+      acc
+    end
+
+    defp starting_heredoc(value) do
+      Regex.run(~R/<<\s*['"]?([A-Z]+)['"]?\s*/, value)
     end
 
     defp comment?(line) do
       Regex.match?(~R/\A\s*#/, line)
-    end
-
-    defp good_pair(pair) do
-      case pair do
-        [key, value] ->
-          String.length(key) > 0 && String.length(value) > 0
-
-        _ ->
-          false
-      end
     end
   end
 end
