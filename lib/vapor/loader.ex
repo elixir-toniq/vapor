@@ -3,7 +3,6 @@ defmodule Vapor.Loader do
   # This module provides a unified way to load a series of providers and merge
   # them into a single result.
   alias Vapor.Provider
-  alias Vapor.LoadError
 
   def load(provider) when not is_list(provider) do
     load([provider])
