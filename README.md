@@ -177,4 +177,6 @@ def deps do
 end
 ```
 
+## Resources from the community
 
+[Configuring your Elixir Application at Runtime with Vapor](https://blog.appsignal.com/2020/04/28/configuring-your-elixir-application-at-runtime-with-vapor.html)
