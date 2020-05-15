@@ -122,7 +122,7 @@ config = Vapor.load!(providers)
 Application.put_env(:my_app, MyApp.Repo, [
   database: config[:database],
   username: config[:database_user],
-  password: config[:database_pasword],
+  password: config[:database_password],
   hostname: config[:database_host],
   port: config[:database_port],
 ])
