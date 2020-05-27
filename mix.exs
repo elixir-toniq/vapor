@@ -38,7 +38,7 @@ defmodule Vapor.Mixfile do
 
       # dev and test dependencies
       {:credo, "~> 1.0", only: [:dev]},
-      {:excoveralls, "~> 0.12.2", only: [:dev, :test]},
+      {:excoveralls, "~> 0.13.0", only: [:dev, :test]},
       {:ex_doc, "~> 0.19", only: :dev}
     ]
   end
