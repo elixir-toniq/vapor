@@ -18,7 +18,8 @@ defmodule Vapor.PlanTest do
       [
         %Env{
           bindings: [
-            foo: "FOO"
+            foo: "FOO",
+            bar: "BAR"
           ]
         }
       ]
@@ -35,6 +36,25 @@ defmodule Vapor.PlanTest do
         ]
       }
     end
+  end
+
+  defmodule DSLPlan do
+    use Vapor.Planner
+
+    dotenv()
+
+    config :env, env([
+      foo: "FOO",
+      bar: "BAR",
+    ])
+
+    config :file, file("test/support/settings.json", [
+      foo: "foo",
+      baz: "baz",
+      boz: ["biz", "boz"],
+    ])
+
+    config :plan, Plan
   end
 
   test "plan modules can be loaded" do
@@ -72,5 +92,22 @@ defmodule Vapor.PlanTest do
     assert_raise ArgumentError, fn ->
       Vapor.load!(UnknownPlan)
     end
+  end
+
+  test "plans can be defined with the dsl" do
+    System.put_env("FOO", "FOO VALUE")
+    System.put_env("BAR", "BAR VALUE")
+
+    config = Vapor.load!(DSLPlan)
+
+    assert config.env[:foo] == "FOO VALUE"
+    assert config.env[:bar] == "BAR VALUE"
+
+    assert config.plan[:foo] == "FOO VALUE"
+    assert config.plan[:bar] == "BAR VALUE"
+
+    assert config.file[:foo] == "file foo"
+    assert config.file[:baz] == "file baz"
+    assert config.file[:boz] == "file biz boz"
   end
 end
