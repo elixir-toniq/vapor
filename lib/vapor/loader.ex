@@ -10,6 +10,7 @@ defmodule Vapor.Loader do
   def load(providers) do
     results =
       providers
+      |> Enum.flat_map(&expand_modules/1)
       |> Enum.map(& Provider.load(&1))
 
     errors =
@@ -33,4 +34,14 @@ defmodule Vapor.Loader do
   defp normalize_error({:error, error}) do
     error
   end
+
+  defp expand_modules(module) when is_atom(module) do
+    if function_exported?(module, :config_plan, 0) do
+      List.wrap(module.config_plan())
+    else
+      raise ArgumentError, "#{module} does not export `config_plan/0`"
+    end
+  end
+
+  defp expand_modules(foo), do: [foo]
 end
