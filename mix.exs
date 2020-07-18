@@ -14,8 +14,6 @@ defmodule Vapor.Mixfile do
       package: package(),
       name: "Vapor",
       source_url: "https://github.com/keathley/vapor",
-      preferred_cli_env: [coveralls: :test, "coveralls.detail": :test, "coveralls.html": :test],
-      test_coverage: [tool: ExCoveralls],
       docs: docs(),
     ]
   end
@@ -38,7 +36,6 @@ defmodule Vapor.Mixfile do
 
       # dev and test dependencies
       {:credo, "~> 1.0", only: [:dev]},
-      {:excoveralls, "~> 0.12.2", only: [:dev, :test]},
       {:ex_doc, "~> 0.19", only: :dev}
     ]
   end
