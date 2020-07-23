@@ -19,7 +19,7 @@ defmodule Vapor.Provider.GroupTest do
       ]},
     ]}
 
-    assert Vapor.load!(provider) == %{primary_db: [host: 4369]}
+    assert Vapor.load!(provider) == %{primary_db: %{host: 4369}}
   end
 
   # TODO - This test is not here to enforce this behaviour. In fact this really
@@ -42,7 +42,7 @@ defmodule Vapor.Provider.GroupTest do
       ]},
     ]
 
-    assert Vapor.load!(providers) == %{primary_db: [port: 4369]}
+    assert Vapor.load!(providers) == %{primary_db: %{port: 4369}}
   end
 
   test "groups returns error if config is missing" do
