@@ -28,7 +28,7 @@ defmodule Vapor.Provider.Group do
   defimpl Vapor.Provider do
     def load(%{providers: providers, name: name}) do
       with {:ok, config} <- Vapor.Loader.load(providers) do
-        {:ok, Map.put(Map.new(), name, Keyword.new(config))}
+        {:ok, Map.put(Map.new(), name, Map.new(config))}
       end
     end
   end
