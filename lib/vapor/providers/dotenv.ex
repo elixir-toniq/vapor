@@ -35,7 +35,7 @@ defmodule Vapor.Provider.Dotenv do
 
       %Dotenv{overwrite: true}
 
-  ## File heirarchy
+  ## File hierarchy
 
   If no file is specified then the dotenv provider will load these files in this
   order. Each proceeding file is loaded over the previous. In these examples `ENV`
