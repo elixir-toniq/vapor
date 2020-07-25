@@ -58,33 +58,6 @@ providers = [
 
 Env will have the highest precedence, followed by File, and finally Dotenv.
 
-### Translating config values
-
-Its often useful to translate configuration values into something meaningful
-for your application. Vapor provides translation options to allow you to do any
-type conversions or data manipulation.
-
-```elixir
-providers = [
-  %Env{bindings: [db_name: "DB_NAME", port: "PORT"]},
-  %File{path: "config.toml", bindings: [kafka_brokers: "kafka.brokers"]},
-]
-
-translations = [
-  port: fn s -> String.to_integer(s) end,
-  kafka_brokers: fn str ->
-    str
-    |> String.split(",")
-    |> Enum.map(fn broker ->
-      [host, port] = String.split(broker, ":")
-      {host, String.to_integer(port)}
-    end)
-  end
-]
-
-config = Vapor.load(providers, translations)
-```
-
 ### Reading config files
 
 Config files can be read from a number of different file types including
@@ -109,26 +82,73 @@ providers = [
 ]
 ```
 
-### Overriding application environment
+## Adding configuration plans to modules
 
-In some cases you may want to overwrite the keys in the application
-environment for convenience. While this is generally discouraged it can be
-a quick way to adopt Vapor. Before you start your supervision tree you can use
-something like this:
+Vapor provides a `Vapor.Plan` behaviour. This allows modules to describe a provider
+or set of providers.
 
 ```elixir
-config = Vapor.load!(providers)
+defmodule VaporExample.Kafka do
+  @behaviour Vapor.Plan
 
-Application.put_env(:my_app, MyApp.Repo, [
-  database: config[:database],
-  username: config[:database_user],
-  password: config[:database_password],
-  hostname: config[:database_host],
-  port: config[:database_port],
-])
+  @impl Vapor.Plan
+  def config_plan do
+    %Vapor.Provider.Env{
+      bindings: [
+        {:brokers, "KAFKA_BROKERS"},
+        {:group_id, "KAFKA_CONSUMER_GROUP_ID"},
+      ]
+    }
+  end
+end
+
+config = Vapor.load!(VaporExample.Kafka)
 ```
 
-## Providers
+## Planner DSL
+
+While using the structs directly is a perfectly reasonable option, it can often
+be verbose. Vapor provides a DSL for specifying configuration plans using less
+lines of code.
+
+```elixir
+defmodule VaporExample.Config do
+  use Vapor.Planner
+
+  dotenv()
+
+  config :db, env([
+    {:url, "DB_URL"},
+    {:name, "DB_NAME"},
+    {:pool_size, "DB_POOL_SIZE", default: 10, map: &String.to_integer/1},
+  ])
+
+  config :web, env([
+    {:port, "PORT", map: &String.to_integer/1}
+  ])
+
+  config :kafka, VaporExample.Kafka
+end
+
+defmodule VaporExample.Application do
+  use Application
+
+  def start(_type, _args) do
+    config = Vapor.load!(VaporExample.Config)
+
+    children = [
+       {VaporExampleWeb.Endpoint, config.web}
+       {VaporExample.Repo, config.db},
+       {VaporExample.Kafka, config.kafka},
+    ]
+
+    opts = [strategy: :one_for_one, name: VaporExample.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+end
+```
+
+## Custom Providers
 
 There are several built in providers
 
