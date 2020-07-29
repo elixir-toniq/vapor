@@ -36,6 +36,7 @@ defmodule Vapor.Loader do
   end
 
   defp expand_modules(module) when is_atom(module) do
+    Code.ensure_loaded(module)
     if function_exported?(module, :config_plan, 0) do
       List.wrap(module.config_plan())
     else
