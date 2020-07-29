@@ -38,12 +38,16 @@ defmodule Vapor.Planner do
 
   defmacro __before_compile__(%{module: mod}) do
     plan = Module.get_attribute(mod, :config_plan)
-    plan = Macro.escape(plan)
+    plan =
+      plan
+      |> Enum.reverse
+      |> Enum.map(fn p -> Macro.escape(p) end)
 
     quote do
       @impl Vapor.Plan
       def config_plan do
         unquote(plan)
+        |> Enum.map(fn p -> __vapor_config__(p) end)
       end
 
       defoverridable config_plan: 0
@@ -52,18 +56,24 @@ defmodule Vapor.Planner do
 
   defmacro dotenv do
     quote do
-      @config_plan %Dotenv{}
+      @config_plan :dotenv
+
+      defp __vapor_config__(:dotenv) do
+        %Dotenv{}
+      end
     end
   end
 
   defmacro config(name, provider) do
     quote do
-      @config_plan %Group{
-        name: unquote(name),
-        providers: [
-          unquote(provider)
-        ]
-      }
+      @config_plan unquote(name)
+
+      defp __vapor_config__(unquote(name)) do
+        %Group{
+          name: unquote(name),
+          providers: [unquote(provider)]
+        }
+      end
     end
   end
 
