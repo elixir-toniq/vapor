@@ -2,10 +2,12 @@ defmodule Vapor.PlanTest do
   use ExUnit.Case, async: true
 
   alias Vapor.Provider.Env
+  alias Vapor.Provider.Group
 
   setup do
     System.delete_env("FOO")
     System.delete_env("BAR")
+    System.delete_env("BOOL")
 
     :ok
   end
@@ -41,11 +43,16 @@ defmodule Vapor.PlanTest do
   defmodule DSLPlan do
     use Vapor.Planner
 
+    def str_to_bool(str) do
+      str == "true"
+    end
+
     dotenv()
 
     config :env, env([
-      foo: "FOO",
-      bar: "BAR",
+      {:foo, "FOO"},
+      {:bar, "BAR"},
+      {:bool, "BOOL", map: &str_to_bool/1},
     ])
 
     config :file, file("test/support/settings.json", [
@@ -94,14 +101,29 @@ defmodule Vapor.PlanTest do
     end
   end
 
+  test "modules can be nested" do
+    System.put_env("FOO", "FOO VALUE")
+    System.put_env("BAR", "BAR VALUE")
+
+    provider = %Group{
+      name: :g,
+      providers: [Plan]
+    }
+    config = Vapor.load!(provider)
+    assert config.g.foo == "FOO VALUE"
+    assert config.g.bar == "BAR VALUE"
+  end
+
   test "plans can be defined with the dsl" do
     System.put_env("FOO", "FOO VALUE")
     System.put_env("BAR", "BAR VALUE")
+    System.put_env("BOOL", "true")
 
     config = Vapor.load!(DSLPlan)
 
     assert config.env[:foo] == "FOO VALUE"
     assert config.env[:bar] == "BAR VALUE"
+    assert config.env.bool == true
 
     assert config.plan[:foo] == "FOO VALUE"
     assert config.plan[:bar] == "BAR VALUE"
