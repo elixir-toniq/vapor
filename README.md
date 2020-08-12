@@ -192,7 +192,7 @@ Add vapor to your mix dependencies:
 ```elixir
 def deps do
   [
-    {:vapor, "~> 0.9"},
+    {:vapor, "~> 0.10"},
   ]
 end
 ```
