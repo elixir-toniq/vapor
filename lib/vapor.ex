@@ -7,8 +7,15 @@ defmodule Vapor do
   @doc """
   Loads a configuration plan.
   """
-  def load(providers, translations \\ [])
+  def load(providers) do
+    with {:error, errors} <- Vapor.Loader.load(providers) do
+      {:error, Vapor.LoadError.exception(errors)}
+    end
+  end
+
   def load(providers, translations) do
+    IO.warn("load/2 and load!/2 are deprecated. Please add translations to each binding")
+
     case Vapor.Loader.load(providers) do
       {:ok, map} ->
         transformed =
@@ -26,7 +33,16 @@ defmodule Vapor do
   @doc """
   Loads a configuration plan or raises
   """
-  def load!(providers, translations \\ [])
+  def load!(providers) do
+    case load(providers) do
+      {:ok, config} ->
+        config
+
+      {:error, error} ->
+        raise error
+    end
+  end
+
   def load!(providers, translations) do
     case load(providers, translations) do
       {:ok, config} ->
