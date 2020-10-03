@@ -33,7 +33,7 @@ defmodule VaporExample.Application do
     config = Vapor.load!(providers)
 
     children = [
-       {VaporExampleWeb.Endpoint, port: config.port}
+       {VaporExampleWeb.Endpoint, port: config.port},
        {VaporExample.Repo, [db_url: config.db_url, db_name: config.db_name]},
        {VaporExample.Kafka, brokers: config.kafka_brokers},
     ]
@@ -124,7 +124,7 @@ defmodule VaporExample.Config do
   ])
 
   config :web, env([
-    {:port, "PORT", map: &String.to_integer/1}
+    {:port, "PORT", map: &String.to_integer/1},
   ])
 
   config :kafka, VaporExample.Kafka
@@ -137,7 +137,7 @@ defmodule VaporExample.Application do
     config = Vapor.load!(VaporExample.Config)
 
     children = [
-       {VaporExampleWeb.Endpoint, config.web}
+       {VaporExampleWeb.Endpoint, config.web},
        {VaporExample.Repo, config.db},
        {VaporExample.Kafka, config.kafka},
     ]
