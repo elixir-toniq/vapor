@@ -1,0 +1,22 @@
+version: 2
+updates:
+- package-ecosystem: mix
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "10:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: yaml_elixir
+    versions:
+    - 2.6.0
+    - 2.7.0
+  - dependency-name: ex_doc
+    versions:
+    - 0.24.0
+    - 0.24.1
+    - 0.24.2
+  - dependency-name: credo
+    versions:
+    - 1.5.4
+    - 1.5.5
