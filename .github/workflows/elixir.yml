@@ -1,23 +1,106 @@
 name: Elixir CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  MIX_ENV: test
 
 jobs:
-  build:
-
+  deps:
+    name: Install Dependencies
     runs-on: ubuntu-latest
-
-    container:
-      image: elixir:1.9.1-slim
-
+    strategy:
+      matrix:
+        elixir: [1.11]
+        otp: [23.3]
     steps:
-    - uses: actions/checkout@v1
-    - name: Install Dependencies
+    - name: checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: setup
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: ${{ matrix.elixir }}
+        otp-version: ${{ matrix.otp }}
+    - name: Retrieve Cached Dependencies
+      uses: actions/cache@v2
+      id: mix-cache
+      with:
+        path: |
+          deps
+          _build
+          priv/plts
+        key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+    - name: Install deps
+      if: steps.mix-cache.outputs.cache-hit != 'true'
       run: |
+        mkdir -p priv/plts
         mix local.rebar --force
         mix local.hex --force
         mix deps.get
-    - name: Check credo
+        mix deps.compile
+        mix dialyzer --plt
+
+  analyze:
+    name: Analysis
+    needs: deps
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        elixir: [1.11]
+        otp: [23.3]
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Setup elixir
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: ${{ matrix.elixir }}
+        otp-version: ${{ matrix.otp }}
+    - name: Retrieve Cached Dependencies
+      uses: actions/cache@v2
+      id: mix-cache
+      with:
+        path: |
+          deps
+          _build
+          priv/plts
+        key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+    - name: Run Credo
       run: mix credo
+    - name: Run Dialyzer
+      run: mix dialyzer --no-check --halt-exit-status
+
+  tests:
+    name: Tests
+    needs: deps
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        elixir: [1.11]
+        otp: [23.3]
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - uses: erlef/setup-beam@v1
+      with:
+        elixir-version: ${{ matrix.elixir }}
+        otp-version: ${{ matrix.otp }}
+    - name: Retrieve Cached Dependencies
+      uses: actions/cache@v2
+      id: mix-cache
+      with:
+        path: |
+          deps
+          _build
+          priv/plts
+        key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
     - name: Run Tests
       run: mix test

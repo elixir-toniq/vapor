@@ -14,6 +14,9 @@ defmodule Vapor.Mixfile do
       package: package(),
       name: "Vapor",
       source_url: "https://github.com/keathley/vapor",
+      dialyzer: [
+        plt_add_apps: [:mix],
+      ],
       docs: docs(),
     ]
   end
@@ -35,7 +38,8 @@ defmodule Vapor.Mixfile do
       {:norm, "~> 0.9"},
 
       # dev and test dependencies
-      {:credo, "~> 1.0", only: [:dev]},
+      {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.1", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.19", only: :dev}
     ]
   end
