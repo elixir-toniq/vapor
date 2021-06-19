@@ -1,5 +1,12 @@
 # Vapor
 
+[![Elixir CI](https://github.com/keathley/vapor/actions/workflows/elixir.yml/badge.svg)](https://github.com/keathley/vapor/actions/workflows/elixir.yml)
+[![Module Version](https://img.shields.io/hexpm/v/vapor.svg)](https://hex.pm/packages/vapor)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/vapor/)
+[![Total Download](https://img.shields.io/hexpm/dt/vapor.svg)](https://hex.pm/packages/vapor)
+[![License](https://img.shields.io/hexpm/l/vapor.svg)](https://github.com/keathley/vapor/blob/master/LICENSE)
+[![Last Updated](https://img.shields.io/github/last-commit/keathley/vapor.svg)](https://github.com/keathley/vapor/commits/master)
+
 <!-- MDOC !-->
 
 Loads dynamic configuration at runtime.
@@ -200,3 +207,9 @@ end
 ## Resources from the community
 
 [Configuring your Elixir Application at Runtime with Vapor](https://blog.appsignal.com/2020/04/28/configuring-your-elixir-application-at-runtime-with-vapor.html)
+
+## Copyright and License
+
+Copyright (c) 2020 Christopher Keathley
+
+This library is released under the MIT License. See the [LICENSE.md](./LICENSE.md) file.

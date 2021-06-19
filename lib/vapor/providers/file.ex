@@ -1,13 +1,21 @@
 defmodule Vapor.Provider.File do
   @moduledoc """
-  Module for loading supported file format configs
-  Supported file formats: .json, .toml, .yaml. Bindings to specific keys must
+  Module for loading supported file format configs.
+
+  Supported file formats: `.json`, `.toml`, and `.yaml`. Bindings to specific keys must
   be provided as a keyword list. The values for each key must be either a string
   or a path based on the Access protocol.
 
   ## Example
 
-      %File{path: "config.toml", bindings: [foo: "foo", nested: ["some", "nested", "value"]]}
+      %File{
+        path: "config.toml",
+        bindings: [
+          foo: "foo",
+          nested: ["some", "nested", "value"]
+        ]
+      }
+
   """
   import Norm
 

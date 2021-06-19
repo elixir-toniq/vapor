@@ -1,23 +1,20 @@
 defmodule Vapor.Mixfile do
   use Mix.Project
 
+  @source_url "https://github.com/keathley/vapor"
   @version "0.10.0"
 
   def project do
     [
       app: :vapor,
       version: @version,
+      name: "Vapor",
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      description: description(),
       package: package(),
-      name: "Vapor",
-      source_url: "https://github.com/keathley/vapor",
-      dialyzer: [
-        plt_add_apps: [:mix],
-      ],
       docs: docs(),
+      dialyzer: [plt_add_apps: [:mix]]
     ]
   end
 
@@ -40,28 +37,33 @@ defmodule Vapor.Mixfile do
       # dev and test dependencies
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.1", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.19", only: :dev}
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
-  end
-
-  defp description do
-    "Dynamic configuration management"
   end
 
   defp package do
     [
       name: "vapor",
+      description: "Dynamic configuration management",
       maintainers: ["Chris Keathley", "Jeff Weiss", "Ben Marx"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/keathley/vapor"}
+      links: %{
+        "GitHub" => @source_url
+      }
     ]
   end
 
   def docs do
     [
-      main: "Vapor",
+      extras: [
+        "CHANGELOG.md": [title: "Changelog"],
+        "LICENSE.md": [title: "License"],
+        "README.md": [title: "Overview"]
+      ],
+      main: "readme",
+      source_url: @source_url,
       source_ref: "v#{@version}",
-      source_url: "https://github.com/keathley/vapor",
+      formatters: ["html"]
     ]
   end
 end

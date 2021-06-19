@@ -1,11 +1,16 @@
 defmodule Vapor.Provider.Env do
   @moduledoc """
   The Env config module provides support for pulling configuration values
-  from the environment. Bindings must be specified at a keyword list.
+  from the environment.
+
+  Bindings must be specified at a keyword list.
 
   ## Example
 
-      %Env{bindings: [foo: "FOO", bar: "VAR_BAR"]}
+      %Env{
+        bindings: [foo: "FOO", bar: "VAR_BAR"]
+      }
+
   """
 
   defstruct bindings: [], required: true
