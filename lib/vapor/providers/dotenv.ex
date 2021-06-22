@@ -1,26 +1,25 @@
 defmodule Vapor.Provider.Dotenv do
   @moduledoc """
   The dotenv config provider will look for a `.env` file and load all of
-  the values for that file. The values can be written like so:
+  the values for that file.
 
-  ```
-  DATABASE_URL=https://localhost:9432
-  PORT=4000
-  REDIS_HOST=1234
-  ```
+  The values can be written like so:
+
+      DATABASE_URL=https://localhost:9432
+      PORT=4000
+      REDIS_HOST=1234
 
   Multiline variables can be written using bash-style heredocs like so:
-  ```
-  API_PRIVATE_KEY=<< EOF
-  -----BEGIN RSA PRIVATE KEY-----
-  MIIEogIBAAKCAQEArq74P2ButEMolub0tHfxdWSLcaGi7Da7IJX7jOZFdcSjvXjt
-  ...
-  4A5j0wlIuJqz+OZmV+WSOlJdFXQugTaMd6hMLG8SE6AvEM+L91E=
-  -----END RSA PRIVATE KEY-----
-  EOF
-  PORT=4000
-  REDIS_HOST=1234
-  ```
+
+      API_PRIVATE_KEY=<< EOF
+      -----BEGIN RSA PRIVATE KEY-----
+      MIIEogIBAAKCAQEArq74P2ButEMolub0tHfxdWSLcaGi7Da7IJX7jOZFdcSjvXjt
+      ...
+      4A5j0wlIuJqz+OZmV+WSOlJdFXQugTaMd6hMLG8SE6AvEM+L91E=
+      -----END RSA PRIVATE KEY-----
+      EOF
+      PORT=4000
+      REDIS_HOST=1234
 
   If the file can't be found then this provider will still return an ok but
   will (obviously) not load any configuration values. The primary use case for
