@@ -98,22 +98,11 @@ defmodule Vapor.Provider.File do
       ]
     end
 
-    defp get(data, path) do
-      get_in(data, List.wrap(path))
-    end
+    defp get(data, path), do: get_in(data, List.wrap(path))
 
-    defp decode(str, format) do
-      case format do
-        :json ->
-          Jason.decode(str)
-
-        :toml ->
-          Toml.decode(str)
-
-        :yaml ->
-          YamlElixir.read_from_string(str)
-      end
-    end
+    defp decode(str, :json), do: Jason.decode(str)
+    defp decode(str, :toml), do: Toml.decode(str)
+    defp decode(str, :yaml), do: YamlElixir.read_from_string(str)
 
     defp read!(path) do
       case File.read(path) do
@@ -133,7 +122,7 @@ defmodule Vapor.Provider.File do
         ".toml" ->
           :toml
 
-        ".yaml" ->
+        ext when ext in [".yaml", ".yml"] ->
           :yaml
 
         _ ->
