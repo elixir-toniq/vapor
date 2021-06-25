@@ -75,7 +75,7 @@ defmodule Vapor.Provider.File do
     end
 
     defp create_binding({name, data}, envs) do
-      case get(envs, data.env) do
+      case get_in(envs, List.wrap(data.env)) do
         nil ->
           val = if data.opts[:default] != nil do
             data.opts[:default]
@@ -96,10 +96,6 @@ defmodule Vapor.Provider.File do
         default: nil,
         required: true,
       ]
-    end
-
-    defp get(data, path) do
-      get_in(data, List.wrap(path))
     end
 
     defp decode(str, format) do
@@ -133,12 +129,11 @@ defmodule Vapor.Provider.File do
         ".toml" ->
           :toml
 
-        ".yaml" ->
+        extension when extension in [".yaml", ".yml"] ->
           :yaml
 
         _ ->
           raise Vapor.FileFormatNotFoundError, path
-
       end
     end
   end
