@@ -11,6 +11,14 @@
 
 Loads dynamic configuration at runtime.
 
+## Sponsors
+
+This project is sponsored by these fine folks:
+
+<img alt="smartlogic" height="30px" src="assets/smartlogic.png?raw=true">
+
+_If you're interested in sponsoring you can do so here: https://github.com/sponsors/keathley_
+
 ## Why Vapor?
 
 Dynamically configuring elixir apps can be hard. There are major
@@ -207,11 +215,6 @@ end
 ## Resources from the community
 
 [Configuring your Elixir Application at Runtime with Vapor](https://blog.appsignal.com/2020/04/28/configuring-your-elixir-application-at-runtime-with-vapor.html)
-## Sponsors
-
-This project is sponsored by these fine folks:
-
-<img alt="smartlogic" height="50px" src="assets/smartlogic.png?raw=true">
 
 ## Copyright and License
 
