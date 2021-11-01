@@ -11,6 +11,14 @@
 
 Loads dynamic configuration at runtime.
 
+## Sponsors
+
+This project is sponsored by these fine folks:
+
+<img alt="smartlogic" height="30px" src="assets/smartlogic.png?raw=true">
+
+_If you're interested in sponsoring you can do so here: https://github.com/sponsors/keathley_
+
 ## Why Vapor?
 
 Dynamically configuring elixir apps can be hard. There are major
