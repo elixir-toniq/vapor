@@ -39,7 +39,7 @@ defmodule Vapor.Provider.File do
       provider = conform!(provider, Vapor.Provider.File.s())
       format = format(provider.path)
 
-      str = read!(provider.path)
+      str = read!(provider.path, provider.required)
 
       with {:ok, file} <- decode(str, format) do
         bound =
@@ -99,25 +99,33 @@ defmodule Vapor.Provider.File do
     end
 
     defp decode(str, format) do
-      case format do
-        :json ->
-          Jason.decode(str)
+      if str == "" do
+        {:ok, %{}}
+      else
+        case format do
+          :json ->
+            Jason.decode(str)
 
-        :toml ->
-          Toml.decode(str)
+          :toml ->
+            Toml.decode(str)
 
-        :yaml ->
-          YamlElixir.read_from_string(str)
+          :yaml ->
+            YamlElixir.read_from_string(str)
+        end
       end
     end
 
-    defp read!(path) do
+    defp read!(path, required) do
       case File.read(path) do
         {:ok, str} ->
           str
 
         {:error, _} ->
-          raise Vapor.FileNotFoundError, path
+          if required do
+            raise Vapor.FileNotFoundError, path
+          else
+            ""
+          end
       end
     end
 
