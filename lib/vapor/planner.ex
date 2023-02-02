@@ -64,6 +64,19 @@ defmodule Vapor.Planner do
     end
   end
 
+  defmacro config(name, providers) when is_list(providers) do
+    quote do
+      @config_plan unquote(name)
+
+      defp __vapor_config__(unquote(name)) do
+        %Group{
+          name: unquote(name),
+          providers: unquote(providers)
+        }
+      end
+    end
+  end
+
   defmacro config(name, provider) do
     quote do
       @config_plan unquote(name)
